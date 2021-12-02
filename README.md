@@ -1,2 +1,2 @@
 # te-reo-autocomplete
-Autocomplete in Te Reo
+Autocomplete in Te Reo Maori
