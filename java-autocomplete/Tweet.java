@@ -6,17 +6,12 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
 import java.util.StringTokenizer;
 import opennlp.tools.sentdetect.*;
-
-import packages.prt.PruningRadixTrie;
 
 public class Tweet extends PAT {
     static String MPTR_EXPORT = "serialized/rmt_terms.txt"; // most popular time ranker persistence file
     static String BIGRAM_EXPORT = "serialized/rmt_bigrams.txt"; // bigram ranker persistence file
-    PruningRadixTrie MPTR_PRT = new PruningRadixTrie();
-    PruningRadixTrie Bigram_PRT = new PruningRadixTrie();
 
     public Tweet() {
         if (verbose) printParams();
@@ -32,7 +27,7 @@ public class Tweet extends PAT {
         SentenceDetectorME detector = new SentenceDetectorME(sentenceModel);  
 
         if (fromSerial) {
-            MPTR_PRT.readTermsFromFile(MPTR_EXPORT.replace("terms", "terms-n" + chunkSize), "\t");
+            currPRT.readTermsFromFile(MPTR_EXPORT.replace("terms", "terms-n" + chunkSize), "\t");
         } else { // otherwise populate from original dataset
             try { // MPTR PRT indexing
                 BufferedReader inputReader = new BufferedReader(new FileReader(DATA, StandardCharsets.UTF_8)); // create reader interface with UTF-8 encoding for macron support
@@ -56,12 +51,13 @@ public class Tweet extends PAT {
                     String[] splitMsg = detector.sentDetect(msg);
                     for (String sentence : splitMsg) {
                         if (!sentence.equals("") && !sentence.isEmpty()) { // prune empty phrases
-                            addTermByChunks(MPTR_PRT, processSentence(sentence), timeRank);
+                            addTermByChunks(processSentence(sentence), timeRank);
                         } 
                     }
                 }
                 inputReader.close();
-                System.out.println(String.format("%,d", (int)MPTR_PRT.termCount) + " terms written from " + DATA);
+                System.out.println(String.format("%,d", (int)currPRT.termCount) + " terms written from " + DATA);
+                
             }
             catch (Exception e) {
                 printError("ERROR: " + e.getMessage());
@@ -69,7 +65,7 @@ public class Tweet extends PAT {
         }
 
         if (fromSerial) {
-            Bigram_PRT.readTermsFromFile(BIGRAM_EXPORT, "\t");
+            currBigramPRT.readTermsFromFile(BIGRAM_EXPORT, "\t");
         } else {
             try { // Bigram PRT indexing
                 BufferedReader inputReader = new BufferedReader(new FileReader(DATA, StandardCharsets.UTF_8)); // create reader interface with UTF-8 encoding for macron support
@@ -89,7 +85,7 @@ public class Tweet extends PAT {
                                     if (s1.isEmpty())
                                         s1 = itr.nextToken();
                                     s2 = itr.nextToken();
-                                    Bigram_PRT.addTerm(s1 + " " + s2, 1); // add words to PRT and increment count
+                                    currBigramPRT.addTerm(s1 + " " + s2, 1); // add words to PRT and increment count
                                     s1 = s2;
                                     s2 = "";
                                 }
@@ -98,12 +94,12 @@ public class Tweet extends PAT {
                     }
                 }
                 inputReader.close();
-                System.out.println(String.format("%,d", (int)Bigram_PRT.termCount) + " terms written from " + DATA);
+                System.out.println(String.format("%,d", (int)currBigramPRT.termCount) + " terms written from " + DATA);
     
                 // save PRTs to persistence files
                 System.out.println("Writing serialized files...");
-                MPTR_PRT.writeTermsToFile(MPTR_EXPORT.replace("terms", "terms-n" + chunkSize));
-                Bigram_PRT.writeTermsToFile(BIGRAM_EXPORT); 
+                currPRT.writeTermsToFile(MPTR_EXPORT.replace("terms", "terms-n" + chunkSize));
+                currBigramPRT.writeTermsToFile(BIGRAM_EXPORT); 
                 System.out.println("Files written.");
             }
             catch (Exception e) {

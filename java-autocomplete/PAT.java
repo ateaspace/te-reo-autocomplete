@@ -15,7 +15,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.text.Normalizer;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -30,8 +29,11 @@ import java.util.stream.Collectors;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JSlider;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
@@ -50,7 +52,7 @@ import packages.CommandLine;
 import packages.CommandLine.*;
 
 @Command(name = "PAT", version = "TRMAC 0.1", mixinStandardHelpOptions = true)
-public class PAT extends JFrame implements Runnable{
+public class PAT extends JFrame implements Runnable, ChangeListener{
 
     final int YEAR_MIN = 2008; // oldest message post year
     final int YEAR_MAX = LocalDate.now().getYear(); // today's year
@@ -65,10 +67,16 @@ public class PAT extends JFrame implements Runnable{
     static Tweet tweet; 
     static Mailbox mbox;
     static int exitCode;
+    static PruningRadixTrie currPRT = new PruningRadixTrie();
+    static PruningRadixTrie currBigramPRT = new PruningRadixTrie();
+    static String currExport;
+    static String currBigramExport;
+    static int thresholdWeight;
     
     JTextField textfield; // input field
-    JFrame f;
+    JFrame f; // frame
     JLabel label; // label for suggestion
+    JSlider slider;
     String final_out = "";
     Double final_value;
     HashMap<String, Double> output;
@@ -116,10 +124,14 @@ public class PAT extends JFrame implements Runnable{
         }
 
         if (filetype.equals("rmt")) {
+            currExport = Tweet.MPTR_EXPORT;
+            currBigramExport = Tweet.BIGRAM_EXPORT;
             checkSerial();
             checkLanguage();
             tweet = new Tweet();
         } else if (filetype.equals("mbox")) {
+            currExport = Mailbox.MPTR_EXPORT;
+            currBigramExport = Mailbox.BIGRAM_EXPORT;
             checkSerial();
             checkLanguage();
             mbox = new Mailbox();
@@ -128,14 +140,14 @@ public class PAT extends JFrame implements Runnable{
             System.exit(exitCode);
         }
         PAT p = new PAT();
-        p.Start();
+        p.Start(p);
     }
 
     public static void main(String[] args) {
         exitCode = new CommandLine(new PAT()).execute(args); 
     }
 
-    public void Start() {
+    public void Start(PAT pat) {
         // jframe properties
         f = new JFrame("Te Reo M\u0101ori Auto-Complete"); 
         textfield = new JTextField();
@@ -143,12 +155,19 @@ public class PAT extends JFrame implements Runnable{
         textfield.setEditable(true);
         label = new JLabel("suggestion: ");
         label.setFont(new Font(Font.SANS_SERIF, 1, 20));
+        slider = new JSlider(JSlider.HORIZONTAL, 0, 5, 1);
+        slider.setPaintLabels(true);
+        slider.setPaintTicks(true);
+        slider.setPaintLabels(true);
+        slider.setMajorTickSpacing(1);
+        slider.addChangeListener(pat);
         JPanel p = new JPanel(new BorderLayout());
         // jframe layout
-        p.add(textfield, BorderLayout.NORTH);
-        p.add(label, BorderLayout.SOUTH);
+        p.add(textfield, BorderLayout.PAGE_START);
+        p.add(label, BorderLayout.LINE_START);
+        p.add(slider, BorderLayout.PAGE_END);
         f.add(p);
-        f.setSize(400, 100);
+        f.setSize(400, 140); // window size
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.setLocationRelativeTo(null); // jframe appear in center of monitor
         f.setVisible(true);
@@ -218,26 +237,22 @@ public class PAT extends JFrame implements Runnable{
                 // retrieve top ranking phrases that contain text_in as prefix
                 List<TermAndFrequency> results_MPTR = null;
                 List<TermAndFrequency> results_Bigram = null;
-                if (filetype.equals("rmt")) {
-                    results_MPTR = tweet.MPTR_PRT.getTopkTermsForPrefix(text_in, TOPK); // retrieve top-k phrases
-                    results_Bigram = tweet.Bigram_PRT.getTopkTermsForPrefix(lastTwoWords, 0, false); // retrieve all matching bigrams
-                } else if (filetype.equals("mbox")) {
-                    results_MPTR = mbox.MPTR_PRT.getTopkTermsForPrefix(text_in, TOPK); // retrieve top-k phrases
-                    results_Bigram = mbox.Bigram_PRT.getTopkTermsForPrefix(lastTwoWords, 0, false); // retrieve all matching bigrams
-                }
+                results_MPTR = currPRT.getTopkTermsForPrefix(text_in, TOPK); // retrieve top-k phrases
+                results_Bigram = currBigramPRT.getTopkTermsForPrefix(lastTwoWords, 0, false); // retrieve all bigrams that match the users input so far
+
                 //System.out.println("TOP-K: " + (TOPK));
                 // System.out.println("results_MPTR_size: " + results_MPTR.size());
                 // System.out.println("results_Bigram_size: " + results_Bigram.size());
 
-                if (results_Bigram.size() > 1 && results_Bigram.size() > 0) { // calculate minimum and maximum bigram ranking values
+                if (results_Bigram.size() > 1) { // calculate minimum and maximum bigram ranking values
                     maxFreq = (int)results_Bigram.get(0).getTermFrequencyCount();
                     minFreq = (int)results_Bigram.get(results_Bigram.size()-1).getTermFrequencyCount();
                 } else {
                     System.out.println("No bigram results");
                     label.setText("-- no results!");
                 }
-                Map<String, Double> normalized_Bigrams = new HashMap<String, Double>();
 
+                Map<String, Double> normalized_Bigrams = new HashMap<String, Double>();
                 for (TermAndFrequency result : results_Bigram) { // normalize bigram ranking values based on min and max
                     normalized_Bigrams.put(result.getTerm(), getNormalized(result.getTermFrequencyCount(), minFreq, maxFreq));
                 }
@@ -246,10 +261,9 @@ public class PAT extends JFrame implements Runnable{
                 
                 for (TermAndFrequency result : results_MPTR) {
                     for (Entry<String, Double> result_bi : bigramFinal) {
-                        if (result.getTerm().contains(result_bi.getKey())) { // if a bigram result exists, add phrase to PRT
+                        if (result.getTerm().trim().endsWith(result_bi.getKey().trim())) { // if a bigram result exists, add phrase to output
                             double ranking_val = result.getTermFrequencyCount() + (BIGRAM_WEIGHT * result_bi.getValue());
                             output.put(result.getTerm(), ranking_val);
-                            continue;
                         }
                     }
                     output.put(result.getTerm(), result.getTermFrequencyCount()); // if no bigram results, add with MPTR metric
@@ -270,9 +284,17 @@ public class PAT extends JFrame implements Runnable{
                         .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
                         .collect(Collectors.toMap(
                             Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
-                    
+
+                    if (verbose) {
+                        System.out.println("Top-Ranking Suggestions:");
+                        for (Entry<String,Double> m : sorted_output.entrySet()) {
+                            System.out.println("\t" + m.getKey() + " : " + round(m.getValue(), 2));
+                        }
+                    }
+
                     final_out = sorted_output.keySet().stream().findFirst().get(); // get top ranking phrase
-                    final_value = sorted_output.get(sorted_output.keySet().toArray()[0]); // get ranking metric of top ranking phrase
+                    final_value = sorted_output.values().stream().findFirst().get(); // get ranking metric of top ranking phrase
+                    
                     out.println("Suggestion: " + final_out); 
                     out.println("Ranking value: " + round(final_value, 2));
                     if (passThreshold(text_in, final_out, final_value)) { // if phrase passes threshold limitations, push to UI
@@ -290,17 +312,16 @@ public class PAT extends JFrame implements Runnable{
     }
 
     // splits string into n chunks and adds to PRT
-    public void addTermByChunks(PruningRadixTrie prt, String input, double timeRank) {
+    public void addTermByChunks(String input, double timeRank) {
         String[] splitInput = input.split(" "); // tokenizer
-        for (int i = 0; i < (splitInput.length - Collections.max(chunkSize) + 1); i++) {
-            for (int chunk : chunkSize) {
-                prt.addTerm(String.join(" ", Arrays.copyOfRange(splitInput, i, i + chunk)).trim(), 2+timeRank); // offset to 'prefer' longer suggestions 
+        for (int i = 0; i < (splitInput.length - Collections.min(chunkSize) + 1); i++) { // number of slides required by minimum chunk size
+            for (int chunk : chunkSize) { // for each window size
+                if (i + chunk < splitInput.length) { // if window fits in frame
+                    currPRT.addTerm(String.join(" ", Arrays.copyOfRange(splitInput, i, i + chunk)).trim(), timeRank); // add window to PRT
+                }
             }
-            // prt.addTerm(String.join(" ", Arrays.copyOfRange(splitInput, i, i + chunkSize)).trim(), 2+timeRank); // offset to 'prefer' longer suggestions
-            // prt.addTerm(String.join(" ", Arrays.copyOfRange(splitInput, i, i + chunkSize-1)).trim(), 1+timeRank);
-            // prt.addTerm(String.join(" ", Arrays.copyOfRange(splitInput, i, i + chunkSize-2)).trim(), timeRank);
         }
-        prt.addTerm(input.trim(), 2+timeRank); // add full phrase
+        currPRT.addTerm(input.trim(), timeRank); // add full phrase
     }
 
     // returns normalized value (0..1) when given min and max
@@ -330,11 +351,11 @@ public class PAT extends JFrame implements Runnable{
         System.out.println("Levenshtein distance to target: " + LevenshteinDistance(removeAccents(currInput), removeAccents(suggestion)));
         // various limitations based on ranking metric and levenshtein distance
         //if (currInput.split(" ").length < 2) return false; // don't make suggestions if only one word exists
-        if (rankingMetric > 100.0 && LevenshteinDistance(currInput, suggestion) < 10) {
+        if (rankingMetric > thresholdWeight*100.0 && LevenshteinDistance(currInput, suggestion) < 10) {
             return true;
-        } else if (rankingMetric > 15.0 && LevenshteinDistance(currInput, suggestion) < 6) {
+        } else if (rankingMetric > thresholdWeight*15.0 && LevenshteinDistance(currInput, suggestion) < 6) {
             return true;
-        } else if (rankingMetric > 5.0 && LevenshteinDistance(currInput, suggestion) < 4) {
+        } else if (rankingMetric > thresholdWeight*5.0 && LevenshteinDistance(currInput, suggestion) < 4) {
             return true;
         } else {
             return false;
@@ -410,17 +431,8 @@ public class PAT extends JFrame implements Runnable{
 
     // checks if serial file exists for given filetype
     private void checkSerial() {
-        File f1 = null;
-        File f2 = null;
-        if (filetype.equals("rmt")) {
-            f1 = new File(Tweet.MPTR_EXPORT.replace("terms", "terms-n" + chunkSize));
-            f2 = new File(Tweet.BIGRAM_EXPORT);
-        } else if (filetype.equals("mbox")) {
-            f1 = new File(Mailbox.MPTR_EXPORT.replace("terms", "terms-n" + chunkSize));
-            f2 = new File(Mailbox.BIGRAM_EXPORT);
-        } else {
-            System.exit(exitCode);
-        }
+        File f1 = new File(currExport.replace("terms", "terms-n" + chunkSize));
+        File f2 = new File(currBigramExport);
 
         if (serialized) {
             System.out.println("-------------------------------------\nForcing use of original data source.");
@@ -504,5 +516,11 @@ public class PAT extends JFrame implements Runnable{
     // prints error messages in bold red text
     public void printError(String s) {
         System.out.println("\033[0;1m" + "\u001b[31m" + s + "\u001B[0m");
+    }
+
+    @Override
+    public void stateChanged(ChangeEvent e) {
+        System.out.println(slider.getValue());
+        thresholdWeight = slider.getValue();
     }
 }

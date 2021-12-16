@@ -9,13 +9,10 @@ import com.google.gson.Gson;
 
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.sentdetect.SentenceModel;
-import packages.prt.PruningRadixTrie;
 
 public class Mailbox extends PAT {
     static String MPTR_EXPORT = "serialized/mbox_terms.txt"; // most popular time ranker persistence file
     static String BIGRAM_EXPORT = "serialized/mbox_bigrams.txt"; // bigram ranker persistence file
-    PruningRadixTrie MPTR_PRT = new PruningRadixTrie();
-    PruningRadixTrie Bigram_PRT = new PruningRadixTrie();
     
     public Mailbox() {
         if (verbose) printParams();
@@ -30,7 +27,7 @@ public class Mailbox extends PAT {
         //Instantiating the SentenceDetectorME class 
         SentenceDetectorME detector = new SentenceDetectorME(sentenceModel); 
         if (fromSerial) {
-            MPTR_PRT.readTermsFromFile(MPTR_EXPORT.replace("terms", "terms-n" + chunkSize), "\t");
+            currPRT.readTermsFromFile(MPTR_EXPORT.replace("terms", "terms-n" + chunkSize), "\t");
         } else { // populate PRTs from original dataset
             try { // MPTR PRT indexing
                 FileReader fr = new FileReader(DATA);
@@ -47,18 +44,18 @@ public class Mailbox extends PAT {
                     String[] splitMsg = detector.sentDetect(msg);
                     for (String sentence : splitMsg) {
                         if (!sentence.equals("") && !sentence.isEmpty()) { // prune empty phrases
-                            addTermByChunks(MPTR_PRT, processSentence(sentence), timeRank);
+                            addTermByChunks(processSentence(sentence), timeRank);
                         } 
                     }
                 }
-                System.out.println(String.format("%,d", (int)MPTR_PRT.termCount) + " terms written from " + DATA);
+                System.out.println(String.format("%,d", (int)currPRT.termCount) + " terms written from " + DATA);
             } catch (Exception e) {
                 printError("ERROR: " + e);
             }
         }
         
         if (fromSerial) {
-            Bigram_PRT.readTermsFromFile(BIGRAM_EXPORT, "\t");
+            currBigramPRT.readTermsFromFile(BIGRAM_EXPORT, "\t");
         } else {
             try { // Bigram PRT indexing
                 FileReader fr = new FileReader(DATA);
@@ -78,19 +75,19 @@ public class Mailbox extends PAT {
                                 if (s1.isEmpty())
                                     s1 = itr.nextToken();
                                 s2 = itr.nextToken();
-                                Bigram_PRT.addTerm(s1 + " " + s2, 1); // add words to PRT and increment count
+                                currBigramPRT.addTerm(s1 + " " + s2, 1); // add words to PRT and increment count
                                 s1 = s2;
                                 s2 = "";
                             }
                         }
                     }
                 }
-                System.out.println(String.format("%,d", (int)Bigram_PRT.termCount) + " terms written from " + DATA);
+                System.out.println(String.format("%,d", (int)currBigramPRT.termCount) + " terms written from " + DATA);
     
                 // save PRTs to persistence files
                 System.out.println("Writing serialized files...");
-                MPTR_PRT.writeTermsToFile(MPTR_EXPORT.replace("terms", "terms-n" + chunkSize));
-                Bigram_PRT.writeTermsToFile(BIGRAM_EXPORT);  
+                currPRT.writeTermsToFile(MPTR_EXPORT.replace("terms", "terms-n" + chunkSize));
+                currBigramPRT.writeTermsToFile(BIGRAM_EXPORT);  
                 System.out.println("Files written.");
             } catch (Exception e) {
                 printError("ERROR " + e);
