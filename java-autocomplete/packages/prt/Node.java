@@ -12,8 +12,7 @@ public class Node
     private double termFrequencyCount;
     private double termFrequencyCountChildMax;
 
-    public Node(double termFrequencyCount2)
-    {
+    public Node(double termFrequencyCount2) {
         this.termFrequencyCount = termFrequencyCount2;
     }
 
@@ -46,6 +45,4 @@ public class Node
     public void setTermFrequencyCountChildMax(double d) {
         this.termFrequencyCountChildMax = d;
     }
-    
-    
 }

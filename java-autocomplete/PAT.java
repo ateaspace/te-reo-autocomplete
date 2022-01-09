@@ -15,10 +15,12 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.text.Normalizer;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +49,7 @@ import opennlp.tools.langdetect.LanguageDetectorModel;
 import opennlp.tools.sentdetect.SentenceModel;
 import packages.prt.PruningRadixTrie;
 import packages.prt.TermAndFrequency;
-
+import packages.prt.TextSanitized;
 import packages.CommandLine;
 import packages.CommandLine.*;
 
@@ -71,7 +73,7 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
     static PruningRadixTrie currBigramPRT = new PruningRadixTrie();
     static String currExport;
     static String currBigramExport;
-    static int thresholdWeight;
+    static double thresholdWeight = 1.0;
     
     JTextField textfield; // input field
     JFrame f; // frame
@@ -82,6 +84,7 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
     HashMap<String, Double> output;
     SentenceModel sentenceModel = null;
     Boolean triggerSuggestion = false;
+    HashMap<String, Integer> triggerCount = new HashMap<>();
     
     @Option(names = {"-o", "--originaldata"}, defaultValue = "false", description = "Force re-generation of serial files by using original data source.")
     boolean serialized; 
@@ -110,6 +113,9 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
 
     @Override
     public void run() {
+        triggerCount.put("100",0);
+        triggerCount.put("15",0);
+        triggerCount.put("5",0);
 
         if (Collections.min(chunkSize) < 1 || Collections.max(chunkSize) > 99) {
             printError("Please enter an n value between 1 and 99 inclusive.");
@@ -128,7 +134,7 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
             currBigramExport = Tweet.BIGRAM_EXPORT;
             checkSerial();
             checkLanguage();
-            tweet = new Tweet();
+            tweet = new Tweet();            
         } else if (filetype.equals("mbox")) {
             currExport = Mailbox.MPTR_EXPORT;
             currBigramExport = Mailbox.BIGRAM_EXPORT;
@@ -155,11 +161,12 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
         textfield.setEditable(true);
         label = new JLabel("suggestion: ");
         label.setFont(new Font(Font.SANS_SERIF, 1, 20));
-        slider = new JSlider(JSlider.HORIZONTAL, 0, 5, 1);
+        slider = new JSlider(JSlider.HORIZONTAL, 0, 100, 10);
         slider.setPaintLabels(true);
         slider.setPaintTicks(true);
         slider.setPaintLabels(true);
-        slider.setMajorTickSpacing(1);
+        slider.setMajorTickSpacing(25);
+        slider.setLabelTable(new Hashtable<Integer, JLabel>() {{ put(10, new JLabel("1")); put(50, new JLabel("5")); put(100, new JLabel("10"));}});
         slider.addChangeListener(pat);
         JPanel p = new JPanel(new BorderLayout());
         // jframe layout
@@ -168,9 +175,14 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
         p.add(slider, BorderLayout.PAGE_END);
         f.add(p);
         f.setSize(400, 140); // window size
-        f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.setLocationRelativeTo(null); // jframe appear in center of monitor
         f.setVisible(true);
+
+        f.addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent e) {
+                closeProgram();
+            }
+        });
 
         textfield.setFocusTraversalKeysEnabled(false); // enables recognition of TAB
         textfield.addKeyListener(new KeyListener() {
@@ -180,7 +192,7 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
                     if (triggerSuggestion) 
                         textfield.setText(final_out);
                 if (e.getKeyCode() == KeyEvent.VK_ESCAPE) 
-                    System.exit(0);
+                    closeProgram();
             }
             @Override
             public void keyTyped(KeyEvent e) {}
@@ -317,11 +329,15 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
         for (int i = 0; i < (splitInput.length - Collections.min(chunkSize) + 1); i++) { // number of slides required by minimum chunk size
             for (int chunk : chunkSize) { // for each window size
                 if (i + chunk < splitInput.length) { // if window fits in frame
-                    currPRT.addTerm(String.join(" ", Arrays.copyOfRange(splitInput, i, i + chunk)).trim(), timeRank); // add window to PRT
+                    String termOriginal = String.join(" ", Arrays.copyOfRange(splitInput, i, i + chunk)).trim();
+                    TextSanitized term = new TextSanitized(termOriginal);
+                    currPRT.addTerm(term, timeRank); // add window to PRT
                 }
             }
         }
-        currPRT.addTerm(input.trim(), timeRank); // add full phrase
+        String termOriginal = input.trim();
+        TextSanitized term = new TextSanitized(termOriginal);
+        currPRT.addTerm(term, timeRank); // add full phrase
     }
 
     // returns normalized value (0..1) when given min and max
@@ -340,10 +356,9 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
             val = val.replaceAll("https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)", ""); // remove URLs https://stackoverflow.com/questions/3809401/what-is-a-good-regular-expression-to-match-a-url
             val = val.replaceAll("(www)\\..{0,100}(\\.nz)|(\\.com)",""); // remove URLs not caught by above expression
             val = val.replaceAll("[\\d|-|(|)]{5,14}",""); // remove phone numbers
-            return val.toLowerCase().replaceAll("\"","").replaceAll("'","").replaceAll("\\s+", " ").trim();
-        } else {
-            return val.toLowerCase().replaceAll("\"","").replaceAll("'","").replaceAll("\\s+", " ").trim();
-        }
+            return val.replaceAll("\"","").replaceAll("'","").replaceAll("\\s+", " ").trim();
+        } 
+        return val.replaceAll("\"","").replaceAll("'","").replaceAll("\\s+", " ").trim();
     }    
     
     // determines whether or not a phrase should be pushed to user
@@ -351,11 +366,15 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
         System.out.println("Levenshtein distance to target: " + LevenshteinDistance(removeAccents(currInput), removeAccents(suggestion)));
         // various limitations based on ranking metric and levenshtein distance
         //if (currInput.split(" ").length < 2) return false; // don't make suggestions if only one word exists
-        if (rankingMetric > thresholdWeight*100.0 && LevenshteinDistance(currInput, suggestion) < 10) {
+        System.out.println(thresholdWeight);
+        if (rankingMetric > (thresholdWeight*100.0) && LevenshteinDistance(currInput, suggestion) < 10) {
+            triggerCount.merge("100", 1, Integer::sum);
             return true;
-        } else if (rankingMetric > thresholdWeight*15.0 && LevenshteinDistance(currInput, suggestion) < 6) {
+        } else if (rankingMetric > (thresholdWeight*15.0) && LevenshteinDistance(currInput, suggestion) < 6) {
+            triggerCount.merge("15", 1, Integer::sum);
             return true;
-        } else if (rankingMetric > thresholdWeight*5.0 && LevenshteinDistance(currInput, suggestion) < 4) {
+        } else if (rankingMetric > (thresholdWeight*5.0) && LevenshteinDistance(currInput, suggestion) < 4) {
+            triggerCount.merge("5", 1, Integer::sum);
             return true;
         } else {
             return false;
@@ -513,14 +532,20 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
             .replaceAll("[^\\p{ASCII}]", "");
 	}
 
+    @Override
+    public void stateChanged(ChangeEvent e) {
+        thresholdWeight = slider.getValue() / 10.0;
+        System.out.println("threshweight: " + thresholdWeight);
+    }
+
+    // executes on escape key press or window cloase
+    private void closeProgram() {
+        System.out.println("Trigger Counts: " + triggerCount);
+        System.exit(0);
+    }
+
     // prints error messages in bold red text
     public void printError(String s) {
         System.out.println("\033[0;1m" + "\u001b[31m" + s + "\u001B[0m");
-    }
-
-    @Override
-    public void stateChanged(ChangeEvent e) {
-        System.out.println(slider.getValue());
-        thresholdWeight = slider.getValue();
     }
 }

@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.StringTokenizer;
 import opennlp.tools.sentdetect.*;
+import packages.prt.TextSanitized;
 
 public class Tweet extends PAT {
     static String MPTR_EXPORT = "serialized/rmt_terms.txt"; // most popular time ranker persistence file
@@ -33,8 +34,11 @@ public class Tweet extends PAT {
                 BufferedReader inputReader = new BufferedReader(new FileReader(DATA, StandardCharsets.UTF_8)); // create reader interface with UTF-8 encoding for macron support
                 String row;
                 DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("d/MM/yyyy");
+                int lineCount = 0;
     
                 while ((row = inputReader.readLine()) != null) {
+                    lineCount++;
+                    System.out.println(lineCount);
                     String[] dateSplit = row.split("\t"); // phrase / date delimiter
                     String date = dateSplit[0];
                     String msg = dateSplit[1];
@@ -51,6 +55,7 @@ public class Tweet extends PAT {
                     String[] splitMsg = detector.sentDetect(msg);
                     for (String sentence : splitMsg) {
                         if (!sentence.equals("") && !sentence.isEmpty()) { // prune empty phrases
+                            //System.out.println(sentence);
                             addTermByChunks(processSentence(sentence), timeRank);
                         } 
                     }
@@ -72,6 +77,7 @@ public class Tweet extends PAT {
                 String row;
     
                 while ((row = inputReader.readLine()) != null) {
+                    
                     String[] data = row.split("\t");
                     for (String sentence : data) {
                         if (!Character.isDigit(sentence.charAt(0))) {
@@ -85,7 +91,9 @@ public class Tweet extends PAT {
                                     if (s1.isEmpty())
                                         s1 = itr.nextToken();
                                     s2 = itr.nextToken();
-                                    currBigramPRT.addTerm(s1 + " " + s2, 1); // add words to PRT and increment count
+                                    String termOriginal = s1 + " " + s2;
+                                    TextSanitized term = new TextSanitized(termOriginal);
+                                    currBigramPRT.addTerm(term, 1); // add words to PRT and increment count
                                     s1 = s2;
                                     s2 = "";
                                 }

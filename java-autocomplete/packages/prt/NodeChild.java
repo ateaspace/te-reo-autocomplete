@@ -1,15 +1,14 @@
 package packages.prt;
 
 public class NodeChild {
-    private String key;
-        
+    private TextSanitized key;
     private Node node;
 
-    public String getKey() {
+    public TextSanitized getKeySanitized() {
         return key;
     }
 
-    public void setKey(String key) {
+    public void setKey(TextSanitized key) {
         this.key = key;
     }
 
@@ -26,7 +25,7 @@ public class NodeChild {
         return "NodeChild [key=" + key + ", node=" + node + "]";
     }
 
-    public NodeChild(String key, Node node) {
+    public NodeChild(TextSanitized key, Node node) {
         super();
         this.key = key;
         this.node = node;

@@ -9,6 +9,7 @@ import com.google.gson.Gson;
 
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.sentdetect.SentenceModel;
+import packages.prt.TextSanitized;
 
 public class Mailbox extends PAT {
     static String MPTR_EXPORT = "serialized/mbox_terms.txt"; // most popular time ranker persistence file
@@ -75,7 +76,9 @@ public class Mailbox extends PAT {
                                 if (s1.isEmpty())
                                     s1 = itr.nextToken();
                                 s2 = itr.nextToken();
-                                currBigramPRT.addTerm(s1 + " " + s2, 1); // add words to PRT and increment count
+                                String termOriginal = s1 + " " + s2;
+                                TextSanitized term = new TextSanitized(termOriginal);
+                                currBigramPRT.addTerm(term, 1); // add words to PRT and increment count
                                 s1 = s2;
                                 s2 = "";
                             }
