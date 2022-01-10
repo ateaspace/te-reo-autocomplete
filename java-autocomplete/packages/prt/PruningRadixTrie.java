@@ -51,7 +51,7 @@ public class PruningRadixTrie {
     {
         try {
             //System.out.println("level: " + level + "\tadd term: " + term.toString());
-            String termSanitizedStr = term.getSanitizedText();
+            //String termSanitizedStr = term.getSanitizedText();
             nodeList.add(curr);
 
             //test for common prefix (with possibly different suffix)
@@ -60,12 +60,12 @@ public class PruningRadixTrie {
             if (currChildren != null) { 
                 for (int j = 0; j < currChildren.size(); j++) {
                     TextSanitized key = currChildren.get(j).getKeySanitized();
-                    String keySanitizedStr = key.getSanitizedText();
+                    //String keySanitizedStr = key.getSanitizedText();
                     Node node = currChildren.get(j).getNode();
 
                     //System.out.println("termSanitized= " + termSanitizedStr + "\tkeySanitized= " + keySanitizedStr);
-                    for (int i = 0; i < Math.min(termSanitizedStr.length(), keySanitizedStr.length()); i++) {
-                        if (termSanitizedStr.charAt(i) == keySanitizedStr.charAt(i)) common = i + 1;
+                    for (int i = 0; i < Math.min(term.getSanitizedTextLength(), key.getSanitizedTextLength()); i++) {
+                        if (term.getSanitizedCharAt(i) == key.getSanitizedCharAt(i)) common = i + 1;
                         else break;
                     }
 
@@ -73,7 +73,7 @@ public class PruningRadixTrie {
                         //term already existed
                         //existing ab
                         //new      ab
-                        if ((common == termSanitizedStr.length()) && (common == keySanitizedStr.length())) {
+                        if ((common == term.getSanitizedTextLength()) && (common == key.getSanitizedTextLength())) {
                             if (node.getTermFrequencyCount() == 0) termCount++;
                             node.setTermFrequencyCount(node.getTermFrequencyCount() + termFrequencyCount);
                             updateMaxCounts(nodeList, node.getTermFrequencyCount());
@@ -82,13 +82,14 @@ public class PruningRadixTrie {
                         //existing abcd
                         //new      ab
                         //if new is shorter (== common), then node(count) and only 1. children add (clause2)
-                        else if (common == termSanitizedStr.length()) {
+                        else if (common == term.getSanitizedTextLength()) {
                             //insert second part of oldKey as child 
                             Node child = new Node(termFrequencyCount);
                             List<NodeChild> l = new ArrayList<>();
-                            String keySuffixOriginal = key.substringOriginal(common);
-                            TextSanitized keySuffix = new TextSanitized(keySuffixOriginal);
-                            //String keySuffix = key.substring(common);
+                            // String keySuffixUnSanitized = key.suffixUnSanitized(common);
+                            // TextSanitized keySuffix = new TextSanitized(keySuffixUnSanitized);
+
+                            TextSanitized keySuffix = TextSanitized.suffixTextSanitized(key, common);
                             l.add(new NodeChild(keySuffix, node));
                             child.setChildren(l);
                             
@@ -97,9 +98,10 @@ public class PruningRadixTrie {
                             updateMaxCounts(nodeList, termFrequencyCount);
 
                             //insert first part as key, overwrite old node
-                            String termPrefixOriginal = term.substringOriginal(0, common);
-                            TextSanitized termPrefix = new TextSanitized(termPrefixOriginal);
-                            // String termSanitizedPrefix = termSanitized.substring(0, common);
+                            // String termPrefixUnSanitized = term.prefixUnSanitized(common);
+                            // TextSanitized termPrefix = new TextSanitized(termPrefixUnSanitized);
+
+                            TextSanitized termPrefix = TextSanitized.prefixTextSanitized(term, common);
                             
                             currChildren.set(j, new NodeChild(termPrefix, child));
                             //sort children descending by termFrequencyCountChildMax to start lookup with most promising branch
@@ -111,10 +113,10 @@ public class PruningRadixTrie {
                         //if oldkey shorter (==common), then recursive addTerm (clause1)
                         //existing: te
                         //new:      test
-                        else if (common == keySanitizedStr.length()) {
-                            // String termSuffix = term.substring(common);
-                            String termSuffixOriginal = term.substringOriginal(common);
-                            TextSanitized termSuffix = new TextSanitized(termSuffixOriginal);
+                        else if (common == key.getSanitizedTextLength()) {
+                            // String termSuffixUnSanitized = term.suffixUnSanitized(common);
+                            // TextSanitized termSuffix = new TextSanitized(termSuffixUnSanitized);
+                            TextSanitized termSuffix = TextSanitized.suffixTextSanitized(term, common);
                             addTerm(node, termSuffix, termFrequencyCount, id, level + 1, nodeList);
                         }
                         //old and new have common substrings
@@ -124,12 +126,12 @@ public class PruningRadixTrie {
                             //insert second part of oldKey and of s as child 
                             Node child = new Node(0);//count
                             List<NodeChild> l = new ArrayList<>();
-                            // String keySuffix = keySanitizedStr.substring(common);
-                            String keySuffixOriginal = key.substringOriginal(common);
-                            TextSanitized keySuffix = new TextSanitized(keySuffixOriginal);
-                            // String termSuffix = term.substring(common);
-                            String termSuffixOriginal = term.substringOriginal(common);
-                            TextSanitized termSuffix = new TextSanitized(termSuffixOriginal);
+                            // String keySuffixUnSanitized = key.suffixUnSanitized(common);
+                            // TextSanitized keySuffix = new TextSanitized(keySuffixUnSanitized);
+                            TextSanitized keySuffix = TextSanitized.suffixTextSanitized(key, common);
+                            // String termSuffixUnSanitized = term.suffixUnSanitized(common);
+                            // TextSanitized termSuffix = new TextSanitized(termSuffixUnSanitized);
+                            TextSanitized termSuffix = TextSanitized.suffixTextSanitized(term, common);
                             l.add(new NodeChild(keySuffix, node));
                             l.add(new NodeChild(termSuffix, new Node(termFrequencyCount)));
                             child.setChildren(l);
@@ -139,9 +141,9 @@ public class PruningRadixTrie {
                             updateMaxCounts(nodeList, termFrequencyCount);
                             
                             //insert first part as key, overwrite old node
-                            // String termPrefix = term.substring(0, common);
-                            String termPrefixOriginal = term.substringOriginal(0, common);
-                            TextSanitized termPrefix = new TextSanitized(termPrefixOriginal);
+                            // String termPrefixUnSanitized = term.prefixUnSanitized(common);
+                            // TextSanitized termPrefix = new TextSanitized(termPrefixUnSanitized);
+                            TextSanitized termPrefix = TextSanitized.prefixTextSanitized(term, common);
                             currChildren.set(j, new NodeChild(termPrefix, child));
                             //sort children descending by termFrequencyCountChildMax to start lookup with most promising branch
                             Collections.sort(currChildren, Comparator.comparing(
@@ -168,7 +170,7 @@ public class PruningRadixTrie {
             }
             termCount++;
             updateMaxCounts(nodeList, termFrequencyCount);
-        } catch (Exception e) { System.out.println("exception: " + term + " " + e.getMessage()); }
+        } catch (Exception e) { System.out.println("exception: " + term + " " + e.getMessage()); e.printStackTrace();}
     }
 
     public void findAllChildTerms(String prefix, int topK, String prefixString, List<TermAndFrequency> results, Boolean pruning) // Removed 3rd parameter: ref long termFrequencyCountPrefix
@@ -194,7 +196,8 @@ public class PruningRadixTrie {
                     // String keySensitive = nodeChild.getKeySensitive();
                     TextSanitized keyTS = nodeChild.getKeySanitized();
                     String key = keyTS.getSanitizedText();
-                    String keyOriginal = keyTS.getOriginalText();
+                    String keyUnSanitized = keyTS.getUnsanitizedText();
+                    
                     Node node = nodeChild.getNode();
                     //pruning/early termination in radix trie lookup
                     if (pruning && (topK > 0) && (results.size() == topK) &&
@@ -207,29 +210,30 @@ public class PruningRadixTrie {
                     // prefix = prefix.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
                     if (noPrefix || unaccent(key).startsWith(unaccent(prefix))) {
                         if (node.getTermFrequencyCount() > 0) {
+                            String newPrefixString = keyTS.getOriginalText();
                             // if (prefix == key) termfrequencyCountPrefix = node.getTermFrequencyCount();
 
                             //candidate                              
-                            if (file != null) file.write(prefixString + keyOriginal + "\t" + node.getTermFrequencyCount() + "\n");
+                            if (file != null) file.write(newPrefixString + "\t" + node.getTermFrequencyCount() + "\n");
                             else {
-                                if (topK > 0) addTopKSuggestion(prefixString + keyOriginal, node.getTermFrequencyCount(), topK, results); 
-                                else results.add(new TermAndFrequency(prefixString + keyOriginal, node.getTermFrequencyCount()));  
+                                if (topK > 0) addTopKSuggestion(newPrefixString, node.getTermFrequencyCount(), topK, results); 
+                                else results.add(new TermAndFrequency(newPrefixString, node.getTermFrequencyCount()));  
                             }
                         }
 
                         if ((node.getChildren() != null) && (node.getChildren().size() > 0)) { 
-                            findAllChildTerms("", node, topK, prefixString + keyOriginal, results, file, pruning);
+                            findAllChildTerms("", node, topK, prefixString + keyUnSanitized, results, file, pruning);
                         }
                         if (!noPrefix) break;
                     } else if (unaccent(prefix).startsWith(unaccent(key))) {
                         if ((node.getChildren() != null) && (node.getChildren().size() > 0)) {
-                            findAllChildTerms(prefix.substring(key.length()), node, topK, prefixString + keyOriginal, results, file, pruning);
+                            findAllChildTerms(prefix.substring(key.length()), node, topK, prefixString + keyUnSanitized, results, file, pruning);
                         }
                         break;
                     }
                 }
             }
-        } catch (Exception e) { System.out.println("exception: " + prefix + " " + e.getMessage()); }
+        } catch (Exception e) { System.out.println("xxexception: " + prefix + " " + e.getMessage()); e.printStackTrace(); }
     }
     
     public List<TermAndFrequency> getTopkTermsForPrefix(String prefix, int topK) {

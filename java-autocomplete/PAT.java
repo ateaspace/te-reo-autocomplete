@@ -159,7 +159,7 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
         textfield = new JTextField();
         textfield.setFont(new Font(Font.SANS_SERIF, 1, 20));
         textfield.setEditable(true);
-        label = new JLabel("suggestion: ");
+        label = new JLabel("Suggestion: ");
         label.setFont(new Font(Font.SANS_SERIF, 1, 20));
         slider = new JSlider(JSlider.HORIZONTAL, 0, 100, 10);
         slider.setPaintLabels(true);
@@ -281,7 +281,7 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
                     output.put(result.getTerm(), result.getTermFrequencyCount()); // if no bigram results, add with MPTR metric
                 }
                 if (text_in.equals("")) {
-                    label.setText("suggestion:");
+                    label.setText("Suggestion:");
                 } else if (!output.isEmpty()) {
                     // forces UTF-8 encoding on output to support macrons
                     PrintStream out = null;
@@ -356,7 +356,6 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
             val = val.replaceAll("https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)", ""); // remove URLs https://stackoverflow.com/questions/3809401/what-is-a-good-regular-expression-to-match-a-url
             val = val.replaceAll("(www)\\..{0,100}(\\.nz)|(\\.com)",""); // remove URLs not caught by above expression
             val = val.replaceAll("[\\d|-|(|)]{5,14}",""); // remove phone numbers
-            return val.replaceAll("\"","").replaceAll("'","").replaceAll("\\s+", " ").trim();
         } 
         return val.replaceAll("\"","").replaceAll("'","").replaceAll("\\s+", " ").trim();
     }    
