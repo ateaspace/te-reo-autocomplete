@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -11,17 +12,14 @@ import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 
-import org.w3c.dom.Text;
-
-public class PruningRadixTrie {
+public class PruningRadixTrie implements Serializable {
         
     public double termCount = 0;
     public double termCountLoaded = 0;
 
-    //The trie
+    //The trie (root node)
     private final Node trie;
 
     public PruningRadixTrie() {

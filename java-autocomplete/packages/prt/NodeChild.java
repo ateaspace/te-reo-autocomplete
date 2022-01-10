@@ -1,6 +1,8 @@
 package packages.prt;
 
-public class NodeChild {
+import java.io.Serializable;
+
+public class NodeChild implements Serializable {
     private TextSanitized key;
     private Node node;
 

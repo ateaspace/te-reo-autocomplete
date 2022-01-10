@@ -1,10 +1,10 @@
 package packages.prt;
 
+import java.io.Serializable;
 import java.util.List;
 
 //Trie node class
-public class Node
-{
+public class Node implements Serializable {
     private List<NodeChild> children;
 
     //Does this node represent the last character in a word? 

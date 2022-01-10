@@ -1,7 +1,10 @@
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.StringTokenizer;
@@ -9,15 +12,19 @@ import com.google.gson.Gson;
 
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.sentdetect.SentenceModel;
+import packages.prt.PruningRadixTrie;
 import packages.prt.TextSanitized;
 
 public class Mailbox extends PAT {
     static String MPTR_EXPORT = "serialized/mbox_terms.txt"; // most popular time ranker persistence file
+    static String MPTR_SER = "serialized/rmt_terms.ser"; // most popular time ranker persistence file
     static String BIGRAM_EXPORT = "serialized/mbox_bigrams.txt"; // bigram ranker persistence file
     
     public Mailbox() {
         if (verbose) printParams();
-        System.out.println("-------------------------------------\nParsing Mailbox...");
+        currTextExport = MPTR_EXPORT;
+        currBinaryExport = MPTR_SER;
+        System.out.println("Parsing Mailbox...");
         try {
             //Loading sentence detector model 
             InputStream inputStream = new FileInputStream(language); 
@@ -28,7 +35,19 @@ public class Mailbox extends PAT {
         //Instantiating the SentenceDetectorME class 
         SentenceDetectorME detector = new SentenceDetectorME(sentenceModel); 
         if (fromSerial) {
-            currPRT.readTermsFromFile(MPTR_EXPORT.replace("terms", "terms-n" + chunkSize), "\t");
+            if (sType == serializeType.text) {
+                currPRT.readTermsFromFile(MPTR_EXPORT, "\t");
+            } else if (sType == serializeType.binary) {
+                FileInputStream fileInputStream;
+                try {
+                    fileInputStream = new FileInputStream(MPTR_SER);
+                    ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
+                    currPRT = (PruningRadixTrie) objectInputStream.readObject();
+                    objectInputStream.close(); 
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
         } else { // populate PRTs from original dataset
             try { // MPTR PRT indexing
                 FileReader fr = new FileReader(DATA);
@@ -45,11 +64,11 @@ public class Mailbox extends PAT {
                     String[] splitMsg = detector.sentDetect(msg);
                     for (String sentence : splitMsg) {
                         if (!sentence.equals("") && !sentence.isEmpty()) { // prune empty phrases
-                            addTermByChunks(processSentence(sentence), timeRank);
+                            addTermByChunks(processSentence(sentence), round(timeRank, 4));
                         } 
                     }
                 }
-                System.out.println(String.format("%,d", (int)currPRT.termCount) + " terms written from " + DATA);
+                System.out.println(String.format("%,d", (int)currPRT.termCount) + " phrases written from " + DATA);
             } catch (Exception e) {
                 printError("ERROR: " + e);
             }
@@ -85,13 +104,13 @@ public class Mailbox extends PAT {
                         }
                     }
                 }
-                System.out.println(String.format("%,d", (int)currBigramPRT.termCount) + " terms written from " + DATA);
+                System.out.println(String.format("%,d", (int)currBigramPRT.termCount) + " bigram terms written from " + DATA);
     
-                // save PRTs to persistence files
-                System.out.println("Writing serialized files...");
-                currPRT.writeTermsToFile(MPTR_EXPORT.replace("terms", "terms-n" + chunkSize));
-                currBigramPRT.writeTermsToFile(BIGRAM_EXPORT);  
-                System.out.println("Files written.");
+                if (sType == serializeType.text) {
+                    writeTextSerializedFile(MPTR_EXPORT, BIGRAM_EXPORT);
+                } else if (sType == serializeType.binary) {
+                    writeBinarySerializedFile(MPTR_SER);
+                }
             } catch (Exception e) {
                 printError("ERROR " + e);
             }

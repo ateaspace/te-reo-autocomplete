@@ -1,6 +1,8 @@
 package packages.prt;
 
-public class TermAndFrequency {
+import java.io.Serializable;
+
+public class TermAndFrequency implements Serializable {
     private String term;
     private double termFrequencyCount;
     

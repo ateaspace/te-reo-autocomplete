@@ -2,8 +2,11 @@ import java.awt.BorderLayout;
 import java.awt.Font;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
@@ -15,7 +18,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.text.Normalizer;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -65,13 +67,14 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
     final String BIGRAM_SPLIT = ",|\\.|!|\\?"; // regex values to split sentences
     final String SENT_MI = "src/mri-sent.bin"; // location of maori sentence tokenizer file
     final String SENT_EN = "src/en-sent.bin"; // location of english sentence tokenizer file
-    static Boolean fromSerial = false; // if tries should be populated from serialized files
+    static Boolean fromSerial = false; // if tree should be populated from serialized file
     static Tweet tweet; 
     static Mailbox mbox;
     static int exitCode;
     static PruningRadixTrie currPRT = new PruningRadixTrie();
     static PruningRadixTrie currBigramPRT = new PruningRadixTrie();
-    static String currExport;
+    static String currTextExport;
+    static String currBinaryExport;
     static String currBigramExport;
     static double thresholdWeight = 1.0;
     
@@ -85,9 +88,11 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
     SentenceModel sentenceModel = null;
     Boolean triggerSuggestion = false;
     HashMap<String, Integer> triggerCount = new HashMap<>();
+    enum serializeType { text, binary, none };
+    enum dataType {rmt, mbox };
     
     @Option(names = {"-o", "--originaldata"}, defaultValue = "false", description = "Force re-generation of serial files by using original data source.")
-    boolean serialized; 
+    boolean forceOriginal; 
 
     @Option(names = {"-a", "--anonymize"}, defaultValue = "false", description = "Anonymize suggestions to hide personal information.")
     static boolean anonymize;
@@ -101,8 +106,11 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
     @Option(names = {"-n", "--numchunks"}, arity="1..*", description = "Number of words per phrase to be used as input. Supports multiple ints seperated by a space. [default=4, 5, 6]")
     static List<Integer> chunkSize = Arrays.asList(4, 5, 6);
 
-    @Parameters(paramLabel = "<fileType>", arity = "1", description = "Type of file. (rmt for Reo Maori Twitter corpus or mbox for Gmail Mailbox data).")
-    static String filetype;
+    @Option(names = {"-s", "--serializetype"}, arity = "1", description = "Method of tree serialization. Options: ${COMPLETION-CANDIDATES} [default=text]")
+    static serializeType sType = serializeType.text;
+
+    @Parameters(paramLabel = "<fileType>", arity = "1", description = "Type of file. Options: ${COMPLETION-CANDIDATES} [default=rmt]")
+    static dataType filetype = dataType.rmt;
 
     @Parameters(paramLabel = "<file>", arity = "1", description = "File to read from.")
     static File DATA;
@@ -129,22 +137,25 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
             System.exit(exitCode);
         }
 
-        if (filetype.equals("rmt")) {
-            currExport = Tweet.MPTR_EXPORT;
+        if (filetype == dataType.rmt) {
+            // currExport = Tweet.MPTR_EXPORT;
             currBigramExport = Tweet.BIGRAM_EXPORT;
+            currTextExport = Tweet.MPTR_EXPORT;
+            currBinaryExport = Tweet.MPTR_SER;
             checkSerial();
             checkLanguage();
             tweet = new Tweet();            
-        } else if (filetype.equals("mbox")) {
-            currExport = Mailbox.MPTR_EXPORT;
+
+        } else if (filetype == dataType.mbox) {
+            // currExport = Mailbox.MPTR_EXPORT;
             currBigramExport = Mailbox.BIGRAM_EXPORT;
+            currTextExport = Mailbox.MPTR_EXPORT;
+            currBinaryExport = Mailbox.MPTR_SER;
             checkSerial();
             checkLanguage();
             mbox = new Mailbox();
-        } else {
-            printError("Given filetype is not supported. Please enter either rmt or mbox as the filetype.");
-            System.exit(exitCode);
-        }
+        } 
+
         PAT p = new PAT();
         p.Start(p);
     }
@@ -407,10 +418,10 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
         }
     }
 
-    private String getSnippet(String s, File f) throws IOException {
+    private String getSnippet(dataType s, File f) throws IOException {
         String row;
         String out = "";
-        if (s.equals("rmt")) {
+        if (s == dataType.rmt) {
             BufferedReader inputReader = new BufferedReader(new FileReader(DATA, StandardCharsets.UTF_8)); // create reader interface with UTF-8 encoding for macron support
             for (int i = 0; i < 15; i++) {
                 row = inputReader.readLine();
@@ -418,7 +429,7 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
             }
             inputReader.close();
             return out;
-        } else if (s.equals("mbox")) {
+        } else if (s == dataType.mbox) {
             FileReader fr = new FileReader(DATA);
             MailItem[] mailitems = new Gson().fromJson(fr, MailItem[].class);
             for (int i = 0; i < 15; i++) {
@@ -449,12 +460,19 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
 
     // checks if serial file exists for given filetype
     private void checkSerial() {
-        File f1 = new File(currExport.replace("terms", "terms-n" + chunkSize));
+        File f1 = null;
         File f2 = new File(currBigramExport);
+        if (sType == serializeType.text) {
+            currTextExport = currTextExport.replace("terms", "terms-n" + chunkSize);
+            f1 = new File(currTextExport);
+        } else if (sType == serializeType.binary) {
+            currBinaryExport = currBinaryExport.replace("terms", "terms-n" + chunkSize);
+            f1 = new File(currBinaryExport);
+        } 
 
-        if (serialized) {
+        if (forceOriginal) {
             System.out.println("-------------------------------------\nForcing use of original data source.");
-        } else if (f1.exists() && f2.exists() && !f1.isDirectory() && !f2.isDirectory()) {
+        } else if (f1.exists() && !f1.isDirectory() && f2.exists() && !f2.isDirectory()) {
             try {
                 if (firstIsRecent(f1.getPath(), DATA.getPath())) {
                     fromSerial = true;
@@ -473,12 +491,35 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
         }
     }
 
+    public void writeBinarySerializedFile(String path) {
+        System.out.println("Writing serialized binary file...");
+        FileOutputStream fileOutputStream;
+        try {
+            fileOutputStream = new FileOutputStream(path);
+            ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
+            objectOutputStream.writeObject(currPRT);
+            objectOutputStream.flush();
+            objectOutputStream.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        System.out.println("File written.");
+    }
+
+    public void writeTextSerializedFile(String prtPath, String bigramPath) {
+        System.out.println("Writing serialized text file...");
+        currPRT.writeTermsToFile(prtPath);
+        currBigramPRT.writeTermsToFile(bigramPath);
+        System.out.println("File written.");
+    }
+
     public void printParams() {
         System.out.println("----------");
         System.out.println("Original data: " + DATA);
         System.out.println("Read from serial? " + fromSerial);
         System.out.println("Data type: " + filetype);
         System.out.println("Sentence chunk size: " + chunkSize);
+        System.out.println("File serialization type: " + sType);
         System.out.println("Top-K: " + TOPK);
         System.out.println("----------");
     }

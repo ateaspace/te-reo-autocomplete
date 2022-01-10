@@ -1,11 +1,12 @@
 package packages.prt;
 
+import java.io.Serializable;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.regex.Pattern;
 
-public class TextSanitized {
+public class TextSanitized implements Serializable {
     private String originalText;
     private String unSanitizedText;
     private String sanitizedText;
