@@ -2,7 +2,6 @@ import java.awt.BorderLayout;
 import java.awt.Font;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -92,26 +91,19 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
     enum dataType {rmt, mbox };
     
     @Option(names = {"-o", "--originaldata"}, defaultValue = "false", description = "Force re-generation of serial files by using original data source.")
-    boolean forceOriginal; 
-
+    static boolean forceOriginal; 
     @Option(names = {"-a", "--anonymize"}, defaultValue = "false", description = "Anonymize suggestions to hide personal information.")
     static boolean anonymize;
-
     @Option(names = {"-v", "--verbose"}, defaultValue = "false", description = "Verbose mode. Provides more detail in console. Useful for troubleshooting.")
     static boolean verbose; 
-
     @Option(names = {"-l", "--language"}, arity="1", defaultValue = "default", description = "Language of text in file (mi or en). [default=auto]")
     static String language;
-
     @Option(names = {"-n", "--numchunks"}, arity="1..*", description = "Number of words per phrase to be used as input. Supports multiple ints seperated by a space. [default=4, 5, 6]")
     static List<Integer> chunkSize = Arrays.asList(4, 5, 6);
-
     @Option(names = {"-s", "--serializetype"}, arity = "1", description = "Method of tree serialization. Options: ${COMPLETION-CANDIDATES} [default=text]")
     static serializeType sType = serializeType.text;
-
     @Parameters(paramLabel = "<fileType>", arity = "1", description = "Type of file. Options: ${COMPLETION-CANDIDATES} [default=rmt]")
     static dataType filetype = dataType.rmt;
-
     @Parameters(paramLabel = "<file>", arity = "1", description = "File to read from.")
     static File DATA;
     

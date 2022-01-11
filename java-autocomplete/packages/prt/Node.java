@@ -1,7 +1,9 @@
 package packages.prt;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 //Trie node class
 public class Node implements Serializable {
@@ -11,9 +13,13 @@ public class Node implements Serializable {
     //0: no word; >0: is word (termFrequencyCount)
     private double termFrequencyCount;
     private double termFrequencyCountChildMax;
+    private Map<String, Double> termFrequencyDistrib = new HashMap<String, Double>();
 
-    public Node(double termFrequencyCount2) {
-        this.termFrequencyCount = termFrequencyCount2;
+    public Node(String originalText, double termFrequencyCount) {
+        if (originalText != null) {
+            termFrequencyDistrib.put(originalText, termFrequencyCount);
+        }
+        this.termFrequencyCount = termFrequencyCount;
     }
 
     @Override
@@ -34,8 +40,15 @@ public class Node implements Serializable {
         return termFrequencyCount;
     }
 
-    public void setTermFrequencyCount(double d) {
-        this.termFrequencyCount = d;
+    // public void setTermFrequencyCount(double d) {
+    //     this.termFrequencyCount = d;
+    // }
+
+    public void incTermFrequencyCount(String originalText, double d) {
+        double origD = termFrequencyDistrib.containsKey(originalText) ? termFrequencyDistrib.get(originalText) : 0;
+        double newD = origD + d;
+        termFrequencyDistrib.put(originalText, newD);
+        this.termFrequencyCount += d;
     }
 
     public double getTermFrequencyCountChildMax() {
@@ -44,5 +57,26 @@ public class Node implements Serializable {
 
     public void setTermFrequencyCountChildMax(double d) {
         this.termFrequencyCountChildMax = d;
+    }
+
+    public void printTermFrequencyDistrib() {
+        for (String key : termFrequencyDistrib.keySet()) {
+            System.out.println(key + " = " + termFrequencyDistrib.get(key));
+        }
+        System.out.println("===========");
+    }
+
+    public String getTermFrequencyDistribMaxKey() {
+        double max = 0;
+        String maxKey = null;
+
+        for (String key : termFrequencyDistrib.keySet()) {
+            double f = termFrequencyDistrib.get(key);
+            if (f > max) {
+                max = f;
+                maxKey = key;
+            }
+        }
+        return maxKey;
     }
 }

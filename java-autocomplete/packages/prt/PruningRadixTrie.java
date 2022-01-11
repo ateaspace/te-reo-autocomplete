@@ -23,7 +23,7 @@ public class PruningRadixTrie implements Serializable {
     private final Node trie;
 
     public PruningRadixTrie() {
-        this.trie = new Node(0);
+        this.trie = new Node(null, 0);
     }
 
     // Insert a word into the trie
@@ -73,7 +73,7 @@ public class PruningRadixTrie implements Serializable {
                         //new      ab
                         if ((common == term.getSanitizedTextLength()) && (common == key.getSanitizedTextLength())) {
                             if (node.getTermFrequencyCount() == 0) termCount++;
-                            node.setTermFrequencyCount(node.getTermFrequencyCount() + termFrequencyCount);
+                            node.incTermFrequencyCount(term.getOriginalText(), termFrequencyCount);
                             updateMaxCounts(nodeList, node.getTermFrequencyCount());
                         }
                         //new is subkey
@@ -82,7 +82,7 @@ public class PruningRadixTrie implements Serializable {
                         //if new is shorter (== common), then node(count) and only 1. children add (clause2)
                         else if (common == term.getSanitizedTextLength()) {
                             //insert second part of oldKey as child 
-                            Node child = new Node(termFrequencyCount);
+                            Node child = new Node(term.getOriginalText(), termFrequencyCount);
                             List<NodeChild> l = new ArrayList<>();
                             // String keySuffixUnSanitized = key.suffixUnSanitized(common);
                             // TextSanitized keySuffix = new TextSanitized(keySuffixUnSanitized);
@@ -122,7 +122,7 @@ public class PruningRadixTrie implements Serializable {
                         //new:      team
                         else {
                             //insert second part of oldKey and of s as child 
-                            Node child = new Node(0);//count
+                            Node child = new Node(null, 0);//count
                             List<NodeChild> l = new ArrayList<>();
                             // String keySuffixUnSanitized = key.suffixUnSanitized(common);
                             // TextSanitized keySuffix = new TextSanitized(keySuffixUnSanitized);
@@ -131,7 +131,7 @@ public class PruningRadixTrie implements Serializable {
                             // TextSanitized termSuffix = new TextSanitized(termSuffixUnSanitized);
                             TextSanitized termSuffix = TextSanitized.suffixTextSanitized(term, common);
                             l.add(new NodeChild(keySuffix, node));
-                            l.add(new NodeChild(termSuffix, new Node(termFrequencyCount)));
+                            l.add(new NodeChild(termSuffix, new Node(term.getOriginalText(), termFrequencyCount)));
                             child.setChildren(l);
 
                             child.setTermFrequencyCountChildMax(
@@ -157,11 +157,11 @@ public class PruningRadixTrie implements Serializable {
             // initialize dictionary if first key is inserted 
             if (currChildren == null) {
                 List<NodeChild> l = new ArrayList<>();
-                l.add(new NodeChild(term, new Node(termFrequencyCount)));
+                l.add(new NodeChild(term, new Node(term.getOriginalText(), termFrequencyCount)));
                 curr.setChildren(l);
             }
             else {
-                currChildren.add(new NodeChild(term, new Node(termFrequencyCount)));
+                currChildren.add(new NodeChild(term, new Node(term.getOriginalText(), termFrequencyCount)));
                 //sort children descending by termFrequencyCountChildMax to start lookup with most promising branch
                 Collections.sort(currChildren, Comparator.comparing(
                         (NodeChild e) -> e.getNode().getTermFrequencyCountChildMax()).reversed());
@@ -171,12 +171,12 @@ public class PruningRadixTrie implements Serializable {
         } catch (Exception e) { System.out.println("exception: " + term + " " + e.getMessage()); e.printStackTrace();}
     }
 
-    public void findAllChildTerms(String prefix, int topK, String prefixString, List<TermAndFrequency> results, Boolean pruning) // Removed 3rd parameter: ref long termFrequencyCountPrefix
+    public void findAllChildTerms(String prefix, int topK, List<TermAndFrequency> results, Boolean pruning) // Removed 3rd parameter: ref long termFrequencyCountPrefix
     {
-        findAllChildTerms(prefix, trie, topK, prefixString, results, null, pruning);
+        findAllChildTerms(prefix, trie, topK, results, null, pruning);
     }
 
-    public void findAllChildTerms(String prefix, Node curr, int topK, String prefixString, List<TermAndFrequency> results, BufferedWriter file, Boolean pruning) // Removed 4th parameter: ref long termfrequencyCountPrefix
+    public void findAllChildTerms(String prefix, Node curr, int topK, List<TermAndFrequency> results, BufferedWriter file, Boolean pruning) // Removed 4th parameter: ref long termfrequencyCountPrefix
     {
         try {
             //pruning/early termination in radix trie lookup
@@ -192,9 +192,9 @@ public class PruningRadixTrie implements Serializable {
                 for (NodeChild nodeChild : curr.getChildren()) {
                     // String key = nodeChild.getKey();
                     // String keySensitive = nodeChild.getKeySensitive();
-                    TextSanitized keyTS = nodeChild.getKeySanitized();
-                    String key = keyTS.getSanitizedText();
-                    String keyUnSanitized = keyTS.getUnsanitizedText();
+                    TextSanitized keySanitized = nodeChild.getKeySanitized();
+                    String keySanitizedStr = keySanitized.getSanitizedText();
+                    // String keyUnSanitized = keyTS.getUnsanitizedText();
                     
                     Node node = nodeChild.getNode();
                     //pruning/early termination in radix trie lookup
@@ -206,26 +206,27 @@ public class PruningRadixTrie implements Serializable {
                     }                     
                     // prefix = Normalizer.normalize(prefix, Normalizer.Form.NFD);
                     // prefix = prefix.replaceAll("\\p{InCombiningDiacriticalMarks}+", "");
-                    if (noPrefix || unaccent(key).startsWith(unaccent(prefix))) {
+                    if (noPrefix || unaccent(keySanitizedStr).startsWith(unaccent(prefix))) {
                         if (node.getTermFrequencyCount() > 0) {
-                            String newPrefixString = keyTS.getOriginalText();
+                            String originalText = keySanitized.getOriginalText();
                             // if (prefix == key) termfrequencyCountPrefix = node.getTermFrequencyCount();
 
                             //candidate                              
-                            if (file != null) file.write(newPrefixString + "\t" + node.getTermFrequencyCount() + "\n");
+                            if (file != null) file.write(originalText + "\t" + node.getTermFrequencyCount() + "\n");
                             else {
-                                if (topK > 0) addTopKSuggestion(newPrefixString, node.getTermFrequencyCount(), topK, results); 
-                                else results.add(new TermAndFrequency(newPrefixString, node.getTermFrequencyCount()));  
+                                addTopKSuggestion(nodeChild, node.getTermFrequencyCount(), topK, results);
+                                // if (topK > 0) addTopKSuggestion(newPrefixString, node.getTermFrequencyCount(), topK, results); 
+                                // else results.add(new TermAndFrequency(newPrefixString, node.getTermFrequencyCount()));  
                             }
                         }
 
                         if ((node.getChildren() != null) && (node.getChildren().size() > 0)) { 
-                            findAllChildTerms("", node, topK, prefixString + keyUnSanitized, results, file, pruning);
+                            findAllChildTerms("", node, topK, results, file, pruning);
                         }
                         if (!noPrefix) break;
-                    } else if (unaccent(prefix).startsWith(unaccent(key))) {
+                    } else if (unaccent(prefix).startsWith(unaccent(keySanitizedStr))) {
                         if ((node.getChildren() != null) && (node.getChildren().size() > 0)) {
-                            findAllChildTerms(prefix.substring(key.length()), node, topK, prefixString + keyUnSanitized, results, file, pruning);
+                            findAllChildTerms(prefix.substring(keySanitizedStr.length()), node, topK, results, file, pruning);
                         }
                         break;
                     }
@@ -245,7 +246,7 @@ public class PruningRadixTrie implements Serializable {
         // long termFrequencyCountPrefix = 0;
 
         // At the end of the prefix, find all child words
-        findAllChildTerms(prefix, topK, "", results, pruning); 
+        findAllChildTerms(prefix, topK, results, pruning); 
         
         return results;
     }
@@ -255,7 +256,7 @@ public class PruningRadixTrie implements Serializable {
         if (termCountLoaded == termCount) return;
         try (BufferedWriter file = new BufferedWriter(Files.newBufferedWriter(Paths.get(path),StandardCharsets.UTF_8))) {
             // long prefixCount = 0;
-            findAllChildTerms("", trie, 0, "", null, file, true);
+            findAllChildTerms("", trie, 0, null, file, true);
             //System.out.println(termCount + " terms written.");
         } catch (Exception e) {
             System.out.println("Writing terms exception: " + e.getMessage());
@@ -264,7 +265,6 @@ public class PruningRadixTrie implements Serializable {
 
     public Boolean readTermsFromFile(String path, String delimiter) { // Introduced parameter fieldDelimiter, the string on each line that separates the word from the frequency. Eg use value "\t" for tab delimited dictionary files.
         try (BufferedReader sr = new BufferedReader(new FileReader(path, StandardCharsets.UTF_8))) {
-            long startTime = System.currentTimeMillis();
             String line;
             
             //process a single line at a time only for memory efficiency  
@@ -281,8 +281,6 @@ public class PruningRadixTrie implements Serializable {
                 }
             }
             termCountLoaded = termCount;
-            long elapsedMilliseconds = System.currentTimeMillis() - startTime;
-            //System.out.println(termCount + " terms loaded in " + elapsedMilliseconds + " ms");
             System.out.println(String.format("%,d", (int)termCount) + " terms written from serialized file");
         } catch (FileNotFoundException e) {
             System.out.println("Could not find file " + path);
@@ -294,19 +292,27 @@ public class PruningRadixTrie implements Serializable {
         return true;
     }
 
-    public void addTopKSuggestion(String term, double d, int topK, List<TermAndFrequency> results) 
+    public void addTopKSuggestion(NodeChild nodeChild, double d, int topK, List<TermAndFrequency> results) 
     {
-        //at the end/highest index is the lowest value
-        // >  : old take precedence for equal rank   
-        // >= : new take precedence for equal rank 
-        if ((results.size() < topK) || (d >= results.get(topK - 1).getTermFrequencyCount())) {
-            TermAndFrequency termAndFrequency = new TermAndFrequency(term, d);
-            int index = Collections.binarySearch(results, termAndFrequency, Comparator.comparing(
-                    (TermAndFrequency e) -> e.getTermFrequencyCount()).reversed()); // descending order
-            if (index < 0) results.add(~index, termAndFrequency); 
-            else results.add(index, termAndFrequency); 
+        // TextSanitized keySanitized = nodeChild.getKeySanitized();
+        // String originalText = keySanitized.getOriginalText();
+        String mostFrequentText = nodeChild.getNode().getTermFrequencyDistribMaxKey();
 
-            if (results.size() > topK) results.remove(topK);
+        if (topK > 0) {
+            //at the end/highest index is the lowest value
+            // >  : old take precedence for equal rank   
+            // >= : new take precedence for equal rank 
+            if ((results.size() < topK) || (d >= results.get(topK - 1).getTermFrequencyCount())) {
+                TermAndFrequency termAndFrequency = new TermAndFrequency(mostFrequentText, d);
+                int index = Collections.binarySearch(results, termAndFrequency, Comparator.comparing(
+                        (TermAndFrequency e) -> e.getTermFrequencyCount()).reversed()); // descending order
+                if (index < 0) results.add(~index, termAndFrequency); 
+                else results.add(index, termAndFrequency); 
+
+                if (results.size() > topK) results.remove(topK);
+            }
+        } else {
+            results.add(new TermAndFrequency(mostFrequentText, d));
         }
     }
     
