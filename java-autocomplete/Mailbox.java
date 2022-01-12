@@ -56,8 +56,7 @@ public class Mailbox extends PAT {
                 for (MailItem mailItem : mailitems) {
                     int date = LocalDate.parse(mailItem.getDate(), dateFormat).getYear();
                     String msg = mailItem.getBody();
-                    timeRank = 1 + TR_WEIGHT * getNormalized(date, YEAR_MIN, YEAR_MAX);
-
+                    timeRank = 1 + TR_WEIGHT * getNormalized(date, YEAR_MIN, YEAR_MAX); // rank based on 1 (frequency) + normalized timeRank value
                     //String[] splitMsg = msg.split(MPTR_SPLIT);
                     String[] splitMsg = detector.sentDetect(msg);
                     for (String sentence : splitMsg) {
@@ -103,11 +102,11 @@ public class Mailbox extends PAT {
                     }
                 }
                 System.out.println(String.format("%,d", (int)currBigramPRT.termCount) + " bigram terms written from " + DATA);
-    
+                // save trees to files using given serializeType
                 if (sType == serializeType.text) {
                     writeTextSerializedFile(MPTR_EXPORT, BIGRAM_EXPORT);
                 } else if (sType == serializeType.binary) {
-                    writeBinarySerializedFile(MPTR_SER);
+                    writeBinarySerializedFile(MPTR_SER, BIGRAM_EXPORT);
                 }
             } catch (Exception e) {
                 printError("ERROR " + e);

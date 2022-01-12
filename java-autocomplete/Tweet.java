@@ -79,7 +79,6 @@ public class Tweet extends PAT {
                 }
                 inputReader.close();
                 System.out.println(String.format("%,d", (int)currPRT.termCount) + " phrases written from " + DATA);
-                
             }
             catch (Exception e) {
                 printError("ERROR: " + e.getMessage());
@@ -95,7 +94,6 @@ public class Tweet extends PAT {
                 String row;
     
                 while ((row = inputReader.readLine()) != null) {
-                    
                     String[] data = row.split("\t");
                     for (String sentence : data) {
                         if (!Character.isDigit(sentence.charAt(0))) {
@@ -125,7 +123,7 @@ public class Tweet extends PAT {
                 if (sType == serializeType.text) {
                     writeTextSerializedFile(MPTR_EXPORT, BIGRAM_EXPORT);
                 } else if (sType == serializeType.binary) {
-                    writeBinarySerializedFile(MPTR_SER);
+                    writeBinarySerializedFile(MPTR_SER, BIGRAM_EXPORT);
                 }
             }
             catch (Exception e) {

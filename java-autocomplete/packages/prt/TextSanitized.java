@@ -23,6 +23,7 @@ public class TextSanitized implements Serializable {
             if (Pattern.matches("\\p{IsPunctuation}", s)) {
                 continue;
             }
+            // accent fold currently disabled due to performance impact
             //String s_af = accentFold(s);
             String s_af_lc = s.toLowerCase();
             sanitizedTextChars.add(s_af_lc);
@@ -80,28 +81,11 @@ public class TextSanitized implements Serializable {
         return childTextSanitized;
     }
 
-    // public static String transformToSanitized(String originalText) {
-    //     String s_np = originalText.replaceAll("\\p{IsPunctuation}", "");
-    //     String s_np_af = accentFold(s_np);
-    //     String transformedText = s_np_af.toLowerCase();
-    //     return transformedText;
-    // }
-
     public static String accentFold(String src) {
 		return Normalizer
 				.normalize(src, Normalizer.Form.NFD)
                 .replaceAll("\\p{Mn}", ""); // (\p{Nonspacing_Mark})
 	}
-
-    // public String substringSanitized(int beginIndex) {
-    //     // return originalText.substring(beginIndex);
-    //     return sanitizedText.substring(beginIndex);
-    // }
-
-    // public String substringSanitized(int beginIndex, int endIndex) {
-    //     // return originalText.substring(beginIndex, endIndex);
-    //     return sanitizedText.substring(beginIndex, endIndex);
-    // }
 
     public String suffixSanitized(int beginIndex) {
         return sanitizedText.substring(beginIndex);
@@ -110,17 +94,6 @@ public class TextSanitized implements Serializable {
     public String prefixSanitized(int endIndex) {
         return sanitizedText.substring(0, endIndex);
     }
-
-    // public String substringOriginal(int beginIndex) {
-    //     int s2o_pos = s2o_mapping[beginIndex];
-    //     return originalText.substring(s2o_pos);
-    // }
-
-    // public String substringOriginal(int beginIndex, int endIndex) {
-    //     int s2o_beginIndex = s2o_mapping[beginIndex];
-    //     int s2o_endIndex = s2o_mapping[endIndex];
-    //     return originalText.substring(s2o_beginIndex, s2o_endIndex);
-    // }
 
     public String suffixUnSanitized(int beginIndex) {
         int s2o_pos = s2o_mapping[beginIndex];
@@ -175,5 +148,4 @@ public class TextSanitized implements Serializable {
     public String toString() {
         return "TextSanitize [unSanitizedText=" + unSanitizedText + ", sanitizedText=" + sanitizedText + "]";
     }
-
 }

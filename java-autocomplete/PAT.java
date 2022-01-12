@@ -147,7 +147,6 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
             checkLanguage();
             mbox = new Mailbox();
         } 
-
         PAT p = new PAT();
         p.Start(p);
     }
@@ -383,6 +382,7 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
         }
     }
 
+    // derives language of text using OpenNLP langdetect model
     private void checkLanguage() {
         if (language.equals("mi")) {
             language = SENT_MI;
@@ -410,12 +410,14 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
         }
     }
 
+    // returns first numLines from dataset for language prediction
     private String getSnippet(dataType s, File f) throws IOException {
         String row;
         String out = "";
+        int numLines = 15;
         if (s == dataType.rmt) {
             BufferedReader inputReader = new BufferedReader(new FileReader(DATA, StandardCharsets.UTF_8)); // create reader interface with UTF-8 encoding for macron support
-            for (int i = 0; i < 15; i++) {
+            for (int i = 0; i < numLines; i++) {
                 row = inputReader.readLine();
                 out = out + " " + row.split("\t")[1];
             }
@@ -424,7 +426,7 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
         } else if (s == dataType.mbox) {
             FileReader fr = new FileReader(DATA);
             MailItem[] mailitems = new Gson().fromJson(fr, MailItem[].class);
-            for (int i = 0; i < 15; i++) {
+            for (int i = 0; i < numLines; i++) {
                 out = out + " " + mailitems[i].getBody();
             }
             return out;
@@ -455,9 +457,12 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
         File f1 = null;
         File f2 = new File(currBigramExport);
         if (sType == serializeType.text) {
+            new File("serialized").mkdir();
+            System.out.println("oo");
             currTextExport = currTextExport.replace("terms", "terms-n" + chunkSize);
             f1 = new File(currTextExport);
         } else if (sType == serializeType.binary) {
+            new File("serialized").mkdir();
             currBinaryExport = currBinaryExport.replace("terms", "terms-n" + chunkSize);
             f1 = new File(currBinaryExport);
         } 
@@ -483,7 +488,8 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
         }
     }
 
-    public void writeBinarySerializedFile(String path) {
+    // writes serialized file using Java Serializable interface
+    public void writeBinarySerializedFile(String path, String bigramPath) {
         System.out.println("Writing serialized binary file...");
         FileOutputStream fileOutputStream;
         try {
@@ -492,12 +498,14 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
             objectOutputStream.writeObject(currPRT);
             objectOutputStream.flush();
             objectOutputStream.close();
+            currBigramPRT.writeTermsToFile(bigramPath);
         } catch (Exception e) {
             e.printStackTrace();
         }
         System.out.println("File written.");
     }
 
+    // writes serialized file using PRT method (term frequency)
     public void writeTextSerializedFile(String prtPath, String bigramPath) {
         System.out.println("Writing serialized text file...");
         currPRT.writeTermsToFile(prtPath);
@@ -505,6 +513,7 @@ public class PAT extends JFrame implements Runnable, ChangeListener{
         System.out.println("File written.");
     }
 
+    // prints numerous parameters for verbose option
     public void printParams() {
         System.out.println("----------");
         System.out.println("Original data: " + DATA);
