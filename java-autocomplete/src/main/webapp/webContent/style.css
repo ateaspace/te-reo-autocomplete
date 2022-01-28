@@ -1,0 +1,78 @@
+html, body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+}
+
+#divMain {
+    /* text-align: center; */
+    padding-top: 5%;
+}
+
+.flex-vertical {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: column;
+}
+
+.flex-horizontal {
+    justify-content: center;
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+}
+
+#inputString {
+    font-size: 20px;
+    font-family: 'Fira Sans', sans-serif;
+    resize: vertical;
+    width: 40vw;
+    height: 10vh;
+    max-height: 40vh;
+    padding: 1%;
+    transition: border 0.2s ease;
+    outline: 1px solid grey;
+    border: 3px solid transparent;
+}
+
+#inputString:focus {
+    outline: none;
+    border: 3px solid rgb(170, 31, 37);
+}
+
+.result {
+    font-size: 20px;
+    font-family: 'Fira Sans', sans-serif;
+    color: grey;
+    margin-top: 1%;
+    cursor: pointer;
+}
+
+.result:hover {
+    color:rgb(0, 128, 0) !important; /* potentially bad practice? */
+}
+
+.result:active {
+    color: darkgreen !important; /* potentially bad practice? */
+}
+
+.cross {
+    margin-top: 1%;
+    margin-left: 1%;
+    width: 2%;
+    height: 2%;
+    cursor: pointer;
+    visibility: hidden;
+    opacity: 0.75;
+    transition: 0.1s ease;
+}
+
+.cross:hover {
+    opacity: 1;
+}
+
+.cross:active {
+    margin-top: 1.2%;
+    opacity: 1;
+}

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Autocomplete</title>
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body> 
+        <div class="flex-vertical" id="divMain">
+            <textarea id="inputString" name="inputString" autocomplete="off" spellcheck="false" maxlength="5000" placeholder="Begin typing..." autofocus></textarea>
+            <div class="flex-horizontal">
+                <div class="result" id="divResult0" title="Click to see this suggestion more">no suggestion</div>
+                <img src="images/cross.png" class="cross" id="cross0" title="Click to see this suggestion less">
+            </div>
+            <div class="flex-horizontal">
+                <div class="result" id="divResult1" title="Click to see this suggestion more"></div>
+                <img src="images/cross.png" class="cross" id="cross1" title="Click to see this suggestion less">
+            </div>
+            <div class="flex-horizontal">
+                <div class="result" id="divResult2" title="Click to see this suggestion more"></div>
+                <img src="images/cross.png" class="cross" id="cross2" title="Click to see this suggestion less">
+            </div>
+            <script type="text/javascript" src="javascript.js"></script>
+        </div>
+    </body>
+</html>
