@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="gs3-autocomplete-ext" default="usage" basedir=".">
+    <property name="package.name" value="gs3-autocomplete" />
+    <property environment="env"/>
+    <property name="gsdl3.src.home" value="${env.GSDL3SRCHOME}"/>
+    <property name="src.home" value="${basedir}/src/main/java" />
+    <property name="build.home" value="${basedir}/build" />
+    <property name="web.dir" value="${basedir}/src/main/webapp" />
+    <property name="tomcat.webapps.dir" value="${gsdl3.src.home}/packages/tomcat/webapps" />
+    
+    <path id="compile.classpath">
+        <fileset dir="lib/java">
+            <include name="*.jar" />
+        </fileset>
+    </path>
+    
+    <!-- Targets -->
+    <target name="usage" description="Print a help message">
+        <echo message="Execute 'ant -projecthelp' for a list of targets." />
+        <echo message="Execute 'ant -help' for Ant help." />
+	</target>
+
+    <target name="gs3-setup" description="Ensures that the gs3-setup script has been sourced.">
+        <fail message="Please run 'gs3-setup' (Windows) or 'source gs3-setup.sh' (Linux/Mac) in the Greenstone3 installation that's associated with this installation before running this step.">
+            <condition>
+                <not>
+                    <isset property="env.GSDL3HOME" />
+                </not>
+            </condition>
+        </fail>
+    </target>
+	
+	<target name="compile" description="Compile any java classes.">
+	    <property name="build.classes" value="${build.home}/classes" />
+	
+	    <!-- Reset the build directory -->
+	    <delete dir="${build.home}" />
+	    <mkdir dir="${build.home}" />
+	    <mkdir dir="${build.classes}" />
+	    
+	    <!-- Compile all java files -->
+        <javac srcdir="${src.home}" destdir="${build.classes}" debug="true">
+            <classpath>
+                <path refid="compile.classpath" />
+            </classpath>
+        </javac>
+    </target>
+    
+    <target name="package" depends="compile" description="Create a WAR package.">
+        <echo message="Creating ${build.home}/${package.name}.war" />
+
+        <copy todir="${build.classes}/src">
+            <fileset dir="${src.home}/org/atea/nlptools/autocomplete/src" includes="**" />
+        </copy>
+            
+        <pathconvert targetos="unix" property="corpus.home.unix">
+            <path path="./corpus"/>
+        </pathconvert>
+
+        <filter token="corpushome" value="${corpus.home.unix}"/>
+	    <copy file="${web.dir}/WEB-INF/web.xml.in" tofile="${web.dir}/WEB-INF/web.xml" filtering="true" overwrite="true"/>
+
+        <war destfile="${build.home}/${package.name}.war" webxml="${web.dir}/WEB-INF/web.xml">
+            <fileset dir="${web.dir}/webContent" includes="**" />
+            <fileset file="${basedir}/config.properties" />
+
+            <lib dir="lib/java">
+                <exclude name="tomcat-servlet-api-8.5.51.jar" /> <!-- The host should already have its own servlet API jar -->
+            </lib>
+            <classes dir="${build.classes}" />
+
+            <webinf dir="${web.dir}/WEB-INF" />
+        </war>
+    </target>
+    
+    <target name="install" depends="gs3-setup,package" description="Installs the WAR package into tomcat.">
+        <echo message="Copying war package to ${tomcat.webapps.dir}" />
+        <copy file="${build.home}/${package.name}.war" todir="${tomcat.webapps.dir}" />
+        <echo message="Done! Tomcat may take a few seconds to recognise the changes." />
+        <property name="PATHome" value="${basedir}" />
+        <echo message="================== value of PATHome: ${PATHome}" />
+    </target>
+</project>
