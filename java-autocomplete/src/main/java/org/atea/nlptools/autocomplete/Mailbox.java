@@ -29,9 +29,9 @@ public class Mailbox extends PATServlet {
         //Instantiating the SentenceDetectorME class 
         SentenceDetectorME detector = new SentenceDetectorME(sentenceModel); 
         if (fromSerial) {
-            if (serType == serType.text) {
+            if (serType == serializeType.text) {
                 currPRT.readTermsFromFile(SAVE_DIR + MPTR_EXPORT, "\t");
-            } else if (serType == serType.binary) {
+            } else if (serType == serializeType.binary) {
                 FileInputStream fileInputStream;
                 try {
                     fileInputStream = new FileInputStream(MPTR_SER);
@@ -99,9 +99,9 @@ public class Mailbox extends PATServlet {
                 }
                 System.out.println(String.format("%,d", (int)currBigramPRT.termCount) + " bigram terms written from " + file);
                 // save trees to files using given serializeType
-                if (serType == serType.text) {
+                if (serType == serializeType.text) {
                     writeTextSerializedFile(MPTR_EXPORT, BIGRAM_EXPORT);
-                } else if (serType == serType.binary) {
+                } else if (serType == serializeType.binary) {
                     writeBinarySerializedFile(MPTR_SER, BIGRAM_EXPORT);
                 }
             } catch (Exception e) {
