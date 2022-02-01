@@ -51,7 +51,7 @@
         <echo message="Creating ${build.home}/${package.name}.war" />
 
         <copy todir="${build.classes}/src">
-            <fileset dir="${src.home}/org/atea/nlptools/autocomplete/src" includes="**" />
+            <fileset dir="${src.home}/org/atea/nlptools/autocomplete" includes="**" />
         </copy>
             
         <pathconvert targetos="unix" property="corpus.home.unix">
