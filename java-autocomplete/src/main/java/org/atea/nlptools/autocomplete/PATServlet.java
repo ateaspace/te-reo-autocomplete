@@ -116,6 +116,7 @@ public class PATServlet extends HttpServlet {
             printError("Given file: " + DATA + " is either a directory or doesn't exist.");
         }
 
+        // option override
         forceOriginal = true;
         language = "auto";
 
@@ -175,64 +176,18 @@ public class PATServlet extends HttpServlet {
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
         if (request == null) {
-            response.sendError(400, "The 'inputString' parameter must be supplied.");
+            response.sendError(400, "A 'positive' or 'negative' string parameter must be supplied.");
         }
         String positiveParameter = request.getParameter("positive");
         String negativeParameter = request.getParameter("negative");
 
         if (positiveParameter != null && negativeParameter == null) {
-            try {
-                String filename = SAVE_DIR + POS_SAVE;
-                FileWriter fw = new FileWriter(filename, true); // true: append
-                if (!lineExistsInFile(positiveParameter, filename)) {
-                    fw.write(positiveParameter + "\n");
-                    fw.close();
-                    System.out.println("\"" + positiveParameter + "\" added to positivePhrases.txt");
-                } else {
-                    System.err.println("\"" + positiveParameter + "\" already exists in positivePhrases file");
-                }
-            }
-            catch(Exception e) {
-                e.printStackTrace();
-            }
+            addPosNegPhrase(positiveParameter, "positive");
         } else if (positiveParameter == null && negativeParameter != null) {
-            try {
-                String filename = SAVE_DIR + NEG_SAVE;
-                FileWriter fw = new FileWriter(filename, true); // true: append
-                if (!lineExistsInFile(negativeParameter, filename)) {
-                    fw.write(negativeParameter + "\n");
-                    fw.close();
-                    System.out.println("\"" + negativeParameter + "\" added to negativePhrases.txt");
-                } else {
-                    System.err.println("\"" + negativeParameter + "\" already exists in negativePhrases file");
-                }
-            }
-            catch(Exception e) {
-                e.printStackTrace();
-            }
+            addPosNegPhrase(negativeParameter, "negative");
         } else {
-            System.err.println("POST request recieved with incorrect parameters.");
+            response.sendError(400, "Request recieved is incorrectly formed. Supply either a 'positive' or 'negative' string parameter.");
         }
-    }
-
-    public boolean lineExistsInFile(String line, String filename) {
-        String row;
-        File file = new File(filename);
-        if (file.exists()) {
-            try (BufferedReader inputReader = new BufferedReader(new FileReader(file, StandardCharsets.UTF_8))) {
-                while ((row = inputReader.readLine()) != null) {
-                    if (row.trim().equals(line.trim())) return true;
-                }
-                inputReader.close();
-            }
-            catch (Exception e) {
-                e.printStackTrace();
-            }
-        } else {
-            // System.err.println("File doesn't exist: " + file);
-        }
-        
-        return false;
     }
 
     public String[] process(String input) {
@@ -536,6 +491,43 @@ public class PATServlet extends HttpServlet {
         }
     }
 
+    public void addPosNegPhrase(String phrase, String type) throws IOException {
+        String filename = null;
+        FileWriter fw = null;
+        if (type.equals("positive")) {
+            filename = SAVE_DIR + POS_SAVE;
+        } else {
+            filename = SAVE_DIR + NEG_SAVE;
+        }
+        fw = new FileWriter(filename, true); // true: append
+        if (!lineExistsInFile(phrase, filename)) {
+            fw.write(phrase + "\n");
+            fw.close();
+            System.out.println("\"" + phrase + "\" added to " + type + "Phrases.txt");
+        } else {
+            System.err.println("\"" + phrase + "\" already exists in " + type + "Phrases file");
+        }
+    }
+
+    public boolean lineExistsInFile(String line, String filename) {
+        String row;
+        File file = new File(filename);
+        if (file.exists()) {
+            try (BufferedReader inputReader = new BufferedReader(new FileReader(file, StandardCharsets.UTF_8))) {
+                while ((row = inputReader.readLine()) != null) {
+                    if (row.trim().equals(line.trim())) return true;
+                }
+                inputReader.close();
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            // System.err.println("File doesn't exist: " + file);
+        }
+        return false;
+    }
+
     // writes serialized file using Java Serializable interface
     public void writeBinarySerializedFile(String path, String bigramPath) {
         System.out.println("Writing serialized binary file...");
@@ -621,7 +613,7 @@ public class PATServlet extends HttpServlet {
             .replaceAll("[^\\p{ASCII}]", "");
 	}
 
-    // executes on escape key press or window cloase
+    // executes on escape key press or window close
     // private void closeProgram() {
     //     System.out.println("Trigger Counts: " + triggerCount);
     //     System.exit(0);
