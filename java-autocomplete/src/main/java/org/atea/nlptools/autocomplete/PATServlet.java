@@ -44,9 +44,7 @@ import opennlp.tools.sentdetect.SentenceModel;
 import packages.prt.PruningRadixTrie;
 import packages.prt.TermAndFrequency;
 import packages.prt.TextSanitized;
-import packages.CommandLine.*;
 
-@Command(name = "PAT", version = "TRMAC 0.1", mixinStandardHelpOptions = true)
 public class PATServlet extends HttpServlet {
 
     final int YEAR_MIN = 2008; // oldest message post year
@@ -54,12 +52,11 @@ public class PATServlet extends HttpServlet {
     final int TOPK = 3; // number of top phrases the ranking system should extract
     final int BIGRAM_WEIGHT = 10; // weight of bigram ranking value
     final int MAX_WORDS_IN_SUGGESTION = 15; // maximum number of words in suggestion
+    final int SNIPPET_SIZE = 50; // number of lines for language detection
     final double TR_WEIGHT = 1.0; // weight of time ranking value
     final double THRESHOLD_WEIGHT = 0.75; // weight of ranking threshold
     final String MPTR_SPLIT = ",|\\.|!|\\?"; // regex values to split sentences 
     final String BIGRAM_SPLIT = ",|\\.|!|\\?"; // regex values to split sentences
-    
-    static Boolean fromSerial = false; // if tree should be populated from serialized file
 
     static PATServlet inputCorpus;
     static int exitCode;
@@ -86,45 +83,19 @@ public class PATServlet extends HttpServlet {
     HashMap<String, Integer> triggerCount = new HashMap<>();
     enum serializeType { text, binary, none };
     enum dataType {rmt, mbox, txt }; 
-    
-    @Option(names = {"-o", "--originaldata"}, defaultValue = "false", description = "Force re-generation of serial files by using original data source.")
-    static boolean forceOriginal; 
-    @Option(names = {"-a", "--anonymize"}, defaultValue = "false", description = "Anonymize suggestions to hide personal information.")
-    static boolean anonymize;
-    @Option(names = {"-v", "--verbose"}, defaultValue = "false", description = "Verbose mode. Provides more detail in console. Useful for troubleshooting.")
-    static boolean verbose; 
-    @Option(names = {"-l", "--language"}, arity="1", defaultValue = "auto", description = "Language of text in file (mi or en). [default=auto]")
-    static String language;
-    @Option(names = {"-n", "--numchunks"}, arity="1..*", description = "Number of words per phrase to be used as input. Supports multiple ints seperated by a space. [default=4, 5, 6]")
-    static List<Integer> chunkSize = Arrays.asList(4, 5, 6);
-    @Option(names = {"-s", "--serializetype"}, arity = "1", description = "Method of tree serialization. Options: ${COMPLETION-CANDIDATES} [default=text]")
-    static serializeType serType = serializeType.text;
-    @Parameters(paramLabel = "<fileType>", arity = "1", description = "Type of file. Options: ${COMPLETION-CANDIDATES} [default=rmt]")
-    static dataType fileType = dataType.rmt;
-    @Parameters(paramLabel = "<file>", arity = "1", description = "File to read from.")
-    static File DATA;
+
+    // options
+    static Boolean fromSerial = false; // if tree should be populated from serialized file
+    static boolean forceOriginal = false; // forces re-generation of serial files by using original data source 
+    static boolean anonymize = false; // anonymize suggestions by hiding some personal information (email addresses, phone numbers)
+    static boolean verbose = false; // verbose mode - provides more detail in console 
+    static String language = "auto"; // language of text in file (mi, en, auto)
+    static List<Integer> chunkSize = Arrays.asList(4, 5, 6); // number of words per phrase to be used as input
+    static serializeType serType = serializeType.text; // method of tree serialization (text, binary, none)
+    static dataType fileType = dataType.rmt; // type of file (rmt, mbox, txt)
+    static File DATA; // file to read sentence data from
 
     private final Gson gsonInstance = new Gson(); // instance of gson for parsing response
-
-    // depreciated
-    // @Override
-    // public void run() {
-    //     triggerCount.put("100",0);
-    //     triggerCount.put("15",0);
-    //     triggerCount.put("5",0);
-
-    //     if (Collections.min(chunkSize) < 1 || Collections.max(chunkSize) > 99) {
-    //         printError("Please enter an n value between 1 and 99 inclusive.");
-    //         System.exit(exitCode);
-    //     } else {
-    //         Collections.sort(chunkSize);
-    //     }
-
-    //     if (!DATA.exists() || DATA.isDirectory()) { 
-    //         printError("Given file: " + DATA + " is either a directory or doesn't exist. Please enter a valid source file.");
-    //         System.exit(exitCode);
-    //     }
-    // }
 
     @Override
     public void init() {
@@ -137,14 +108,15 @@ public class PATServlet extends HttpServlet {
         SENT_EN = corpusDir + "mri-sent.bin";
         SENT_MI = corpusDir + "en-sent.bin";
         LANG_DETECT = corpusDir + "langdetect-183.bin";
-        SAVE_DIR = corpusInput.replace(".csv", "");
+
+        SAVE_DIR = corpusInput.substring(0, corpusInput.lastIndexOf("."));
         
         DATA = new File(corpusInput);
         if (DATA.isDirectory() || !DATA.exists()) {
-            printError("Given file: " + DATA + "is either a directory or doesn't exist.");
+            printError("Given file: " + DATA + " is either a directory or doesn't exist.");
         }
 
-        // forceOriginal = true;
+        forceOriginal = true;
         language = "auto";
 
         checkSerial(serType);
@@ -241,7 +213,6 @@ public class PATServlet extends HttpServlet {
         } else {
             System.err.println("POST request recieved with incorrect parameters.");
         }
-        
     }
 
     public boolean lineExistsInFile(String line, String filename) {
@@ -456,6 +427,9 @@ public class PATServlet extends HttpServlet {
                 trainedModel = new LanguageDetectorModel(modelFile);
                 LanguageDetectorME languageDetector = new LanguageDetectorME(trainedModel);
                 Language[] languages = languageDetector.predictLanguages(getSnippet(fileType, f));
+                // for (Language l : languages) {
+                //     System.out.println(l.getLang() + " : " + round(l.getConfidence(), 2));
+                // }
                 System.out.println("Predicted language: " + languages[0].getLang() + " with " + round(languages[0].getConfidence(), 2) + " confidence.");
                 if (languages[0].getLang().equals("mri")) {
                     language = SENT_MI;
@@ -479,25 +453,25 @@ public class PATServlet extends HttpServlet {
     private String getSnippet(dataType s, File f) throws IOException {
         String row;
         String out = "";
-        int numLines = 15;
         if (s == dataType.rmt) {
             BufferedReader inputReader = new BufferedReader(new FileReader(f, StandardCharsets.UTF_8)); // create reader interface with UTF-8 encoding for macron support
-            for (int i = 0; i < numLines; i++) {
+            for (int i = 0; i < SNIPPET_SIZE; i++) {
                 row = inputReader.readLine();
-                out = out + " " + row.split("\t")[1];
+                out = out + " " + row;
+                // out = out + " " + row.split("\t")[1];
             }
             inputReader.close();
             return out;
         } else if (s == dataType.mbox) {
             FileReader fr = new FileReader(f);
             MailItem[] mailitems = new Gson().fromJson(fr, MailItem[].class);
-            for (int i = 0; i < numLines; i++) {
+            for (int i = 0; i < SNIPPET_SIZE; i++) {
                 out = out + " " + mailitems[i].getBody();
             }
             return out;
         } else if (s == dataType.txt) {
             BufferedReader inputReader = new BufferedReader(new FileReader(f, StandardCharsets.UTF_8)); // create reader interface with UTF-8 encoding for macron support
-            for (int i = 0; i < numLines; i++) {
+            for (int i = 0; i < SNIPPET_SIZE; i++) {
                 row = inputReader.readLine();
                 out = out + " " + row;
             }
@@ -648,10 +622,10 @@ public class PATServlet extends HttpServlet {
 	}
 
     // executes on escape key press or window cloase
-    private void closeProgram() {
-        System.out.println("Trigger Counts: " + triggerCount);
-        System.exit(0);
-    }
+    // private void closeProgram() {
+    //     System.out.println("Trigger Counts: " + triggerCount);
+    //     System.exit(0);
+    // }
 
     // prints error messages in bold red text
     public void printError(String s) {
