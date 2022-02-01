@@ -29,6 +29,7 @@ public class Tweet extends PATServlet {
         SentenceDetectorME detector = new SentenceDetectorME(sentenceModel);  
 
         if (fromSerial) {
+            long startTime = System.currentTimeMillis();
             if (serType == serializeType.text) {
                 System.out.println("Reading terms from: " + SAVE_DIR + MPTR_EXPORT);
                 currPRT.readTermsFromFile(SAVE_DIR + MPTR_EXPORT, "\t");
@@ -43,6 +44,9 @@ public class Tweet extends PATServlet {
                     e.printStackTrace();
                 }
             }
+            long stopTime = System.currentTimeMillis();
+            long elapsedTime = stopTime - startTime;
+            System.out.println("===== build time ===== " + elapsedTime);
         } else { // otherwise populate from original dataset
             try { // MPTR PRT indexing
                 BufferedReader inputReader = new BufferedReader(new FileReader(file, StandardCharsets.UTF_8)); // create reader interface with UTF-8 encoding for macron support
@@ -50,6 +54,7 @@ public class Tweet extends PATServlet {
                 DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("d/MM/yyyy");
                 // int lineCount = 0;
     
+                long startTime = System.currentTimeMillis();
                 while ((row = inputReader.readLine()) != null) {
                     // lineCount++;
                     // System.out.println(lineCount);
@@ -77,6 +82,9 @@ public class Tweet extends PATServlet {
                         
                     }
                 }
+                long stopTime = System.currentTimeMillis();
+                long elapsedTime = stopTime - startTime;
+                System.out.println("===== build time ===== " + elapsedTime);
                 inputReader.close();
                 System.out.println(String.format("%,d", (int)currPRT.termCount) + " phrases written from " + file);
             }
