@@ -26,22 +26,22 @@ public class PlainText extends PATServlet {
                 while ((row = inputReader.readLine()) != null) {
                     row = row.trim();
                     if (!row.equals("") && !row.isEmpty()) {
-                        if (row.length() < 150) { // if row contains less than x chars, run OpenNLP, otherwise regex split
+                        if (row.length() < 250) { // if row contains less than x chars, run OpenNLP, otherwise regex split
                             splitMsg = detector.sentDetect(row);
                         } else {
                             splitMsg = row.split(MPTR_SPLIT);
                         }
                         
                         for (String sentence : splitMsg) {
-                            if (!sentence.equals("") && !sentence.isEmpty()) { // prune empty phrases
+                            if (!sentence.equals("") && !sentence.isEmpty()) { // prune empty and large phrases
                                 //System.out.println(sentence);
                                 addTermByChunks(processSentence(sentence), 1);
                             } 
                         }
                         lineCount++;
-                        if (lineCount > 200000) {
-                            break;
-                        }
+                        // if (lineCount > 200000) {
+                        //     break;
+                        // }
                         if (lineCount % 1000 == 0) {
                             System.out.println("processing line: " + trueLineCount + " line length: " + row.length());
                         }
