@@ -196,116 +196,121 @@ public class PATServlet extends HttpServlet {
         int minFreq = 0;
         String text_in = "";
 
-        // process input text
-        String[] splitInput = input.split("\\.|\\?|\\!");
-        if (splitInput.length > 1) {
-            text_in = splitInput[splitInput.length-1].toLowerCase().replaceAll("^\\s+","");
-        } else {
-            text_in = input.toLowerCase().replaceAll("^\\s+","");
-        }
-
-        String lastTwoWords = text_in.trim(); // stores last two words for bigram prefix search
-        String lastThreeWords = text_in.trim(); // stores last two words for bigram prefix search
-        String[] words = text_in.split(" ");
-        if (words.length > 2) { // if more than two words are present, retrieve last two
-            lastTwoWords = words[words.length - 2] + " " + words[words.length - 1].trim();
-        }
-        if (words.length > 3) {
-            lastThreeWords = String.join(" ", Arrays.copyOfRange(words, words.length-3, words.length));
-        }
-        if (verbose) {
-            System.out.println("Bigram text in: " + lastTwoWords);
-            System.out.println("Last three words: " + lastThreeWords);
-        }
-        
-        System.out.println("-------------------------------------\nText in: " + text_in);
-
-        // retrieve top ranking phrases that contain text_in as prefix
-        List<TermAndFrequency> results_MPTR = null;
-        List<TermAndFrequency> results_Bigram = null;
-        Set<Entry<String, Double>> bigramFinal = null;
-        
-        results_MPTR = currPRT.getTopkTermsForPrefix(text_in, TOPK); // retrieve top-k phrases
-        
-        if (currBigramPRT.termCount != 0) {
-            results_Bigram = currBigramPRT.getTopkTermsForPrefix(lastTwoWords, 0, false); // retrieve all bigrams that match the users input so far
-            if (results_Bigram.size() > 1) { // calculate minimum and maximum bigram ranking values
-                maxFreq = (int)results_Bigram.get(0).getTermFrequencyCount();
-                minFreq = (int)results_Bigram.get(results_Bigram.size()-1).getTermFrequencyCount();
+        try {
+            // process input text
+            String[] splitInput = input.split("\\.|\\?|\\!");
+            if (splitInput.length > 1) {
+                text_in = splitInput[splitInput.length-1].toLowerCase().replaceAll("^\\s+","");
             } else {
-                System.out.println("No bigram results");
+                text_in = input.toLowerCase().replaceAll("^\\s+","");
             }
-            Map<String, Double> normalized_Bigrams = new HashMap<String, Double>();
-            for (TermAndFrequency result : results_Bigram) { // normalize bigram ranking values based on min and max
-                normalized_Bigrams.put(result.getTerm(), getNormalized(result.getTermFrequencyCount(), minFreq, maxFreq));
-            }
-            bigramFinal = normalized_Bigrams.entrySet(); // convert to set
-        } else {
-            System.out.println("Bigram not populated!");
-        }
 
-        for (TermAndFrequency result : results_MPTR) {
-            if (bigramFinal.size() > 0) {
-                for (Entry<String, Double> result_bi : bigramFinal) {
-                    if (result.getTerm().trim().endsWith(result_bi.getKey().trim())) { // if a bigram result exists, add phrase to output
-                        double ranking_val = result.getTermFrequencyCount() + (BIGRAM_WEIGHT * result_bi.getValue());
-                        output.put(result.getTerm(), ranking_val);
-                    }
+            String lastTwoWords = text_in.trim(); // stores last two words for bigram prefix search
+            String lastThreeWords = text_in.trim(); // stores last two words for bigram prefix search
+            String[] words = text_in.split(" ");
+            if (words.length > 2) { // if more than two words are present, retrieve last two
+                lastTwoWords = words[words.length - 2] + " " + words[words.length - 1].trim();
+            }
+            if (words.length > 3) {
+                lastThreeWords = String.join(" ", Arrays.copyOfRange(words, words.length-3, words.length));
+            }
+            if (verbose) {
+                System.out.println("Bigram text in: " + lastTwoWords);
+                System.out.println("Last three words: " + lastThreeWords);
+            }
+
+            System.out.println("-------------------------------------\nText in: " + text_in);
+
+            // retrieve top ranking phrases that contain text_in as prefix
+            List<TermAndFrequency> results_MPTR = null;
+            List<TermAndFrequency> results_Bigram = null;
+            Set<Entry<String, Double>> bigramFinal = null;
+
+            results_MPTR = currPRT.getTopkTermsForPrefix(text_in, TOPK); // retrieve top-k phrases
+
+            if (currBigramPRT.termCount != 0) {
+                results_Bigram = currBigramPRT.getTopkTermsForPrefix(lastTwoWords, 0, false); // retrieve all bigrams that match the users input so far
+                if (results_Bigram.size() > 1) { // calculate minimum and maximum bigram ranking values
+                    maxFreq = (int)results_Bigram.get(0).getTermFrequencyCount();
+                    minFreq = (int)results_Bigram.get(results_Bigram.size()-1).getTermFrequencyCount();
+                } else {
+                    System.out.println("No bigram results");
                 }
+                Map<String, Double> normalized_Bigrams = new HashMap<String, Double>();
+                for (TermAndFrequency result : results_Bigram) { // normalize bigram ranking values based on min and max
+                    normalized_Bigrams.put(result.getTerm(), getNormalized(result.getTermFrequencyCount(), minFreq, maxFreq));
+                }
+                bigramFinal = normalized_Bigrams.entrySet(); // convert to set
             } else {
-                output.put(result.getTerm(), result.getTermFrequencyCount()); // if no bigram results, add with MPTR metric
+                System.out.println("Bigram not populated!");
             }
-        }
-        if (text_in.equals("")) {
-            // label.setText("Suggestion:");
-        } else if (!output.isEmpty()) {
-            // forces UTF-8 encoding on output to support macrons
-            PrintStream out = null;
-            try {
-                out = new PrintStream(System.out, true, "UTF-8");
-            } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
-            }
-            // sorts output based on ranking metric
-            Map<String, Double> sorted_output =
-            output.entrySet().stream()
-                .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
-                .collect(Collectors.toMap(
-                    Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
 
-            List<String> topk_out = Arrays.asList(sorted_output.keySet().toArray(new String[sorted_output.size()]));
-            final_out = sorted_output.keySet().stream().findFirst().get(); // get top ranking phrase
-            final_value = sorted_output.values().stream().findFirst().get(); // get ranking metric of top ranking phrase
-            
-            out.println("Top-ranking suggestions:");
-            for (Entry<String,Double> m : sorted_output.entrySet()) {
-                out.println("\t" + m.getKey() + " : " + round(m.getValue(), 2));
-            }
-            // move suggestion to top if exists in positive list
+            for (TermAndFrequency result : results_MPTR) {
 
-            List<String> adjusted_topk_out = new ArrayList<>();
-
-            for (String s : topk_out) {
-                if (!lineExistsInFile(s, SAVE_DIR + NEG_SAVE)) {
-                    if (!lineExistsInFile(s, SAVE_DIR + POS_SAVE)) {
-                        adjusted_topk_out.add(s);
-                    } else {
-                        adjusted_topk_out.add(0, s);
-                        System.err.println("\"" + s + "\" moved to top of suggestions");
+                if (bigramFinal != null) {
+                    for (Entry<String, Double> result_bi : bigramFinal) {
+                        if (result.getTerm().trim().endsWith(result_bi.getKey().trim())) { // if a bigram result exists, add phrase to output
+                            double ranking_val = result.getTermFrequencyCount() + (BIGRAM_WEIGHT * result_bi.getValue());
+                            output.put(result.getTerm(), ranking_val);
+                        }
                     }
                 } else {
-                    System.err.println("\"" + s + "\" removed from suggestions");
+                    output.put(result.getTerm(), result.getTermFrequencyCount()); // if no bigram results, add with MPTR metric
                 }
             }
+            if (text_in.equals("")) {
+                // label.setText("Suggestion:");
+            } else if (!output.isEmpty()) {
+                // forces UTF-8 encoding on output to support macrons
+                PrintStream out = null;
+                try {
+                    out = new PrintStream(System.out, true, "UTF-8");
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
+                // sorts output based on ranking metric
+                Map<String, Double> sorted_output =
+                output.entrySet().stream()
+                    .sorted(Map.Entry.comparingByValue(Comparator.reverseOrder()))
+                    .collect(Collectors.toMap(
+                        Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
 
-            if (passThreshold(text_in, final_out, final_value)) { // if phrase passes threshold limitations, push to UI
-                out.println("Pass threshold: yes");
-                triggerSuggestion = true;
-            } else {
-                out.println("Pass threshold: no");
-                triggerSuggestion = false;
+                List<String> topk_out = Arrays.asList(sorted_output.keySet().toArray(new String[sorted_output.size()]));
+                final_out = sorted_output.keySet().stream().findFirst().get(); // get top ranking phrase
+                final_value = sorted_output.values().stream().findFirst().get(); // get ranking metric of top ranking phrase
+                
+                out.println("Top-ranking suggestions:");
+                for (Entry<String,Double> m : sorted_output.entrySet()) {
+                    out.println("\t" + m.getKey() + " : " + round(m.getValue(), 2));
+                }
+                // move suggestion to top if exists in positive list
+
+                List<String> adjusted_topk_out = new ArrayList<>();
+
+                for (String s : topk_out) {
+                    if (!lineExistsInFile(s, SAVE_DIR + NEG_SAVE)) {
+                        if (!lineExistsInFile(s, SAVE_DIR + POS_SAVE)) {
+                            adjusted_topk_out.add(s);
+                        } else {
+                            adjusted_topk_out.add(0, s);
+                            System.err.println("\"" + s + "\" moved to top of suggestions");
+                        }
+                    } else {
+                        System.err.println("\"" + s + "\" removed from suggestions");
+                    }
+                }
+
+                if (passThreshold(text_in, final_out, final_value)) { // if phrase passes threshold limitations, push to UI
+                    out.println("Pass threshold: yes");
+                    triggerSuggestion = true;
+                } else {
+                    out.println("Pass threshold: no");
+                    triggerSuggestion = false;
+                }
+                return adjusted_topk_out.toArray(new String[adjusted_topk_out.size()]);
             }
-            return adjusted_topk_out.toArray(new String[adjusted_topk_out.size()]);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return new String[]{"ns"};
     }
@@ -349,9 +354,10 @@ public class PATServlet extends HttpServlet {
     
     // determines whether or not a phrase should be pushed to user
     private boolean passThreshold(String currInput, String suggestion, Double rankingMetric) { 
-        System.out.println("Levenshtein distance to target: " + LevenshteinDistance(accentFold(currInput), accentFold(suggestion)));
-        String foldedCurrInput = accentFold(currInput);
-        String foldedSuggestion = accentFold(suggestion);
+        String foldedCurrInput = accentFold(currInput).toLowerCase();
+        String foldedSuggestion = accentFold(suggestion).toLowerCase();
+        System.out.println("Levenshtein distance to target: " + LevenshteinDistance(foldedCurrInput, foldedSuggestion));
+
         // various limitations based on ranking metric and levenshtein distance
         //if (currInput.split(" ").length < 2) return false; // don't make suggestions if only one word exists
         System.out.println("Threshold weight: " + THRESHOLD_WEIGHT);
