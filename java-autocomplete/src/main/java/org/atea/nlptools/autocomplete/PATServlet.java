@@ -78,15 +78,17 @@ public class PATServlet extends HttpServlet {
     static String BIGRAM_EXPORT = "/bigrams.txt"; // bigram ranker persistence file
     static String POS_SAVE = "/positivePhrases.txt"; // location of positive phrases
     static String NEG_SAVE = "/negativePhrases.txt"; // location of negative phrases
+
+    static SentenceModel sentenceModel = null; // sentence tokenizer model
     
     String final_out = ""; // final suggestion
     Double final_value; // final ranking value
     HashMap<String, Double> output; // top-k suggestions and ranking values
-    SentenceModel sentenceModel = null; // sentence tokenizer model
+    
     Boolean triggerSuggestion = false; // whether or not suggestion passes threshold
     HashMap<String, Integer> triggerCount = new HashMap<>(); // count of threshold actuations
     enum serializeType { text, binary, none }; // serialization technique
-    enum dataType {rmt, mbox, txt }; // type of dataset (ReoMaoriTwitter.csv, mailbox.json, text.txt)
+    enum dataType { rmt, mbox, txt }; // type of dataset (ReoMaoriTwitter.csv, mailbox.json, text.txt)
 
     // options
     static Boolean fromSerial = false; // if tree should be populated from serialized file
@@ -122,8 +124,8 @@ public class PATServlet extends HttpServlet {
         }
 
         // option override
-        // forceOriginal = true;
         language = "auto";
+        forceOriginal = true;
 
         availSer = checkSerial(serType);
         checkLanguage(DATA);
@@ -339,9 +341,11 @@ public class PATServlet extends HttpServlet {
                 }
             }
         }
-        String termOriginal = input.trim();
-        TextSanitized term = new TextSanitized(termOriginal);
-        currPRT.addTerm(term, timeRank); // add full phrase
+        if (splitInput.length < MAX_WORDS_IN_SUGGESTION) {
+            String termOriginal = input.trim();
+            TextSanitized term = new TextSanitized(termOriginal);
+            currPRT.addTerm(term, timeRank); // add full phrase
+        }
     }
 
     // returns normalized value (0..1) when given min and max
