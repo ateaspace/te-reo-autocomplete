@@ -4,10 +4,8 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
 import java.nio.charset.StandardCharsets;
 import opennlp.tools.sentdetect.*;
-import packages.prt.PruningRadixTrie;
 
 public class PlainText extends PATServlet {
 
@@ -26,20 +24,7 @@ public class PlainText extends PATServlet {
         SentenceDetectorME detector = new SentenceDetectorME(sentenceModel);  
 
         if (fromSerial) {
-            if (serType == serializeType.text) {
-                System.out.println("Reading terms from: " + SAVE_DIR + MPTR_EXPORT);
-                currPRT.readTermsFromFile(SAVE_DIR + MPTR_EXPORT, "\t");
-            } else if (serType == serializeType.binary) {
-                FileInputStream fileInputStream;
-                try {
-                    fileInputStream = new FileInputStream(MPTR_SER);
-                    ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
-                    currPRT = (PruningRadixTrie) objectInputStream.readObject();
-                    objectInputStream.close(); 
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
+            readMPTRSerializedFile();
         } else { // otherwise populate from original dataset
             try { // MPTR PRT indexing
                 BufferedReader inputReader = new BufferedReader(new FileReader(file, StandardCharsets.UTF_8)); // create reader interface with UTF-8 encoding for macron support
@@ -71,9 +56,9 @@ public class PlainText extends PATServlet {
                         if (lineCount % 1000 == 0) {
                             System.out.println("processing line: " + trueLineCount + " line length: " + row.length());
                         }
-                        if (lineCount > 195000) {
-                            System.out.println("processing line: " + trueLineCount + " line length: " + row.length());
-                        }
+                        // if (lineCount > 195000) {
+                        //     System.out.println("processing line: " + trueLineCount + " line length: " + row.length());
+                        // }
                     }
                     trueLineCount++;
                 }
@@ -81,17 +66,12 @@ public class PlainText extends PATServlet {
                 System.out.println(String.format("%,d", (int)currPRT.termCount) + " phrases written from " + file);
                 long stopTime = System.currentTimeMillis();
                 long elapsedTime = stopTime - startTime;
-                System.out.println("===== build time ===== " + elapsedTime);
-            }
+                System.out.println("===== build time: " + elapsedTime + "ms ===== ");            }
             catch (Exception e) {
                 printError("ERROR: " + e.getMessage());
                 e.printStackTrace();
             }
-            if (serType == serializeType.text) {
-                writeTextSerializedFile(MPTR_EXPORT, BIGRAM_EXPORT);
-            } else if (serType == serializeType.binary) {
-                writeBinarySerializedFile(MPTR_SER, BIGRAM_EXPORT);
-            }
+            writeSerialized();
         }
     }
 }

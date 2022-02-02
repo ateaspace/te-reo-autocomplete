@@ -1,9 +1,11 @@
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
@@ -26,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.StringTokenizer;
 import java.util.stream.Collectors;
 
 import javax.servlet.ServletConfig;
@@ -94,6 +97,7 @@ public class PATServlet extends HttpServlet {
     static serializeType serType = serializeType.text; // method of tree serialization (text, binary, none)
     static dataType fileType = dataType.rmt; // type of file (rmt, mbox, txt)
     static File DATA; // file to read sentence data from
+    static String availSer = "";
 
     private final Gson gsonInstance = new Gson(); // instance of gson for parsing response
 
@@ -117,10 +121,10 @@ public class PATServlet extends HttpServlet {
         }
 
         // option override
-        forceOriginal = true;
+        // forceOriginal = true;
         language = "auto";
 
-        checkSerial(serType);
+        availSer = checkSerial(serType);
         checkLanguage(DATA);
 
         if (fileTypeString.equals("rmt")) {
@@ -246,7 +250,6 @@ public class PATServlet extends HttpServlet {
             }
 
             for (TermAndFrequency result : results_MPTR) {
-
                 if (bigramFinal != null) {
                     for (Entry<String, Double> result_bi : bigramFinal) {
                         if (result.getTerm().trim().endsWith(result_bi.getKey().trim())) { // if a bigram result exists, add phrase to output
@@ -254,9 +257,8 @@ public class PATServlet extends HttpServlet {
                             output.put(result.getTerm(), ranking_val);
                         }
                     }
-                } else {
-                    output.put(result.getTerm(), result.getTermFrequencyCount()); // if no bigram results, add with MPTR metric
                 }
+                output.put(result.getTerm(), result.getTermFrequencyCount()); // if no bigram results, add with MPTR metric
             }
             if (text_in.equals("")) {
                 // label.setText("Suggestion:");
@@ -461,7 +463,7 @@ public class PATServlet extends HttpServlet {
     }
 
     // checks if serial file exists for given filetype
-    private void checkSerial(serializeType st) {
+    private String checkSerial(serializeType st) {
         File f1 = null;
         File f2 = new File(SAVE_DIR + BIGRAM_EXPORT);
         new File(SAVE_DIR).mkdir();
@@ -474,20 +476,26 @@ public class PATServlet extends HttpServlet {
         } else {
             System.err.println("Serialize Type: " + st + " does not exist.");
         }
-
-        if (forceOriginal) {
-            System.out.println("-------------------------------------\nForcing use of original data source.");
-        } else if (f1.exists() && !f1.isDirectory() && f2.exists() && !f2.isDirectory()) {
-            try {
+        try {
+            if (forceOriginal) {
+                System.out.println("-------------------------------------\nForcing use of original data source.");
+            } else if (f1.exists() && !f1.isDirectory() && f2.exists() && !f2.isDirectory()) {
                 if (firstIsRecent(f1.getPath(), DATA.getPath())) {
                     fromSerial = true;
+                    return "both";
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }    
-        } else {
-            System.out.println("-------------------------------------\nSerial file(s) not found at " + f1.getAbsolutePath() + " and " + f2.getAbsolutePath());
-        }
+            } else if (f1.exists() && !f1.isDirectory() && (!f2.exists() || f2.isDirectory())) {
+                if (firstIsRecent(f1.getPath(), DATA.getPath())) {
+                    fromSerial = true;
+                    return "noBigram";
+                }
+            } else {
+                System.out.println("-------------------------------------\nSerial file(s) not found at " + f1.getAbsolutePath() + " and " + f2.getAbsolutePath());
+                return "noSerialFiles";
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }    
 
         if (fromSerial && anonymize) {
             printError("Anonymize flag ignored due to present serial files.");
@@ -495,6 +503,7 @@ public class PATServlet extends HttpServlet {
         if (anonymize) {
             System.out.println("Anonymizing data...");
         }
+        return "";
     }
 
     public void addPosNegPhrase(String phrase, String type) throws IOException {
@@ -534,8 +543,37 @@ public class PATServlet extends HttpServlet {
         return false;
     }
 
+    public void readMPTRSerializedFile() {
+        long startTime = System.currentTimeMillis();
+        try {
+            if (serType == serializeType.text) {
+                System.out.println("Reading terms from: " + SAVE_DIR + MPTR_EXPORT);
+                currPRT.readTermsFromFile(SAVE_DIR + MPTR_EXPORT, "\t");
+            } else if (serType == serializeType.binary) {
+                FileInputStream fileInputStream;
+                fileInputStream = new FileInputStream(SAVE_DIR + MPTR_SER);
+                ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
+                currPRT = (PruningRadixTrie) objectInputStream.readObject();
+                objectInputStream.close(); 
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        long stopTime = System.currentTimeMillis();
+        long elapsedTime = stopTime - startTime;
+        System.out.println("===== build time: " + elapsedTime + "ms ===== ");
+    }
+
+    public void writeSerialized() {
+        if (serType == serializeType.text) {
+            writeTextSerialized(MPTR_EXPORT, BIGRAM_EXPORT);
+        } else if (serType == serializeType.binary) {
+            writeBinarySerialized(MPTR_SER, BIGRAM_EXPORT);
+        }
+    }
+
     // writes serialized file using Java Serializable interface
-    public void writeBinarySerializedFile(String path, String bigramPath) {
+    public void writeBinarySerialized(String path, String bigramPath) {
         System.out.println("Writing serialized binary file...");
         FileOutputStream fileOutputStream;
         try {
@@ -544,7 +582,9 @@ public class PATServlet extends HttpServlet {
             objectOutputStream.writeObject(currPRT);
             objectOutputStream.flush();
             objectOutputStream.close();
-            currBigramPRT.writeTermsToFile(SAVE_DIR + bigramPath);
+            if (currBigramPRT.termCount > 0) {
+               currBigramPRT.writeTermsToFile(SAVE_DIR + bigramPath); 
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -552,11 +592,33 @@ public class PATServlet extends HttpServlet {
     }
 
     // writes serialized file using PRT method (term frequency)
-    public void writeTextSerializedFile(String prtPath, String bigramPath) {
+    public void writeTextSerialized(String prtPath, String bigramPath) {
         System.out.println("Writing serialized text file...");
         currPRT.writeTermsToFile(SAVE_DIR + prtPath);
-        currBigramPRT.writeTermsToFile(SAVE_DIR + bigramPath);
+        if (currBigramPRT.termCount > 0) {
+            currBigramPRT.writeTermsToFile(SAVE_DIR + bigramPath);
+        }
         System.out.println("File written to: " + SAVE_DIR + prtPath);
+    }
+
+    public void writeBigrams(String sentence) {
+        // tokenizer to maintain word position within sentence
+        StringTokenizer itr = new StringTokenizer(sentence.toLowerCase().trim().replace("\"", ""));
+        if (itr.countTokens() > 1) {
+            String s1 = "";
+            String s2 = "";
+            while (itr.hasMoreTokens())
+            {
+                if (s1.isEmpty())
+                    s1 = itr.nextToken();
+                s2 = itr.nextToken();
+                String termOriginal = s1 + " " + s2;
+                TextSanitized term = new TextSanitized(termOriginal);
+                currBigramPRT.addTerm(term, 1); // add words to PRT and increment count
+                s1 = s2;
+                s2 = "";
+            }
+        }
     }
 
     // prints numerous parameters for verbose option

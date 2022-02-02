@@ -109,7 +109,7 @@ $("#cross2").click(function(){ crossClicked("crs2") });
 
 function crossClicked(cross) {
     var negativeSuggestion;
-    if (cross == "crs0" && stringValud(sug0)) {
+    if (cross == "crs0" && stringValid(sug0)) {
         negativeSuggestion = sug0;
     } else if (cross == "crs1" && stringValid(sug1)) {
         negativeSuggestion = sug1;

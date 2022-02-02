@@ -3,16 +3,12 @@ import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.StringTokenizer;
 import com.google.gson.Gson;
 
 import opennlp.tools.sentdetect.SentenceDetectorME;
 import opennlp.tools.sentdetect.SentenceModel;
-import packages.prt.PruningRadixTrie;
-import packages.prt.TextSanitized;
 
 public class Mailbox extends PATServlet {  
 
@@ -29,19 +25,7 @@ public class Mailbox extends PATServlet {
         //Instantiating the SentenceDetectorME class 
         SentenceDetectorME detector = new SentenceDetectorME(sentenceModel); 
         if (fromSerial) {
-            if (serType == serializeType.text) {
-                currPRT.readTermsFromFile(SAVE_DIR + MPTR_EXPORT, "\t");
-            } else if (serType == serializeType.binary) {
-                FileInputStream fileInputStream;
-                try {
-                    fileInputStream = new FileInputStream(MPTR_SER);
-                    ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
-                    currPRT = (PruningRadixTrie) objectInputStream.readObject();
-                    objectInputStream.close(); 
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
+            readMPTRSerializedFile();
         } else { // populate PRTs from original dataset
             try { // MPTR PRT indexing
                 FileReader fr = new FileReader(file);
@@ -67,7 +51,7 @@ public class Mailbox extends PATServlet {
             }
         }
         
-        if (fromSerial) {
+        if (fromSerial && availSer.equals("both")) {
             currBigramPRT.readTermsFromFile(SAVE_DIR + BIGRAM_EXPORT, "\t");
         } else {
             try { // Bigram PRT indexing
@@ -78,32 +62,12 @@ public class Mailbox extends PATServlet {
                     String msg = mailItem.getBody();
                     String[] splitMsg = msg.split(BIGRAM_SPLIT);
                     for (String sentence : splitMsg) {
-                        // tokenizer to maintain word position within sentence
-                        StringTokenizer itr = new StringTokenizer(sentence.toLowerCase().trim().replace("\"", "")); 
-                        if (itr.countTokens() > 1) {
-                            String s1 = "";
-                            String s2 = "";
-                            while (itr.hasMoreTokens())
-                            {
-                                if (s1.isEmpty())
-                                    s1 = itr.nextToken();
-                                s2 = itr.nextToken();
-                                String termOriginal = s1 + " " + s2;
-                                TextSanitized term = new TextSanitized(termOriginal);
-                                currBigramPRT.addTerm(term, 1); // add words to PRT and increment count
-                                s1 = s2;
-                                s2 = "";
-                            }
-                        }
+                        writeBigrams(sentence);
                     }
                 }
                 System.out.println(String.format("%,d", (int)currBigramPRT.termCount) + " bigram terms written from " + file);
-                // save trees to files using given serializeType
-                if (serType == serializeType.text) {
-                    writeTextSerializedFile(MPTR_EXPORT, BIGRAM_EXPORT);
-                } else if (serType == serializeType.binary) {
-                    writeBinarySerializedFile(MPTR_SER, BIGRAM_EXPORT);
-                }
+                
+                writeSerialized();
             } catch (Exception e) {
                 printError("ERROR " + e);
             }
