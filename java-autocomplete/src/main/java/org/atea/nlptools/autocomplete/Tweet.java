@@ -11,13 +11,13 @@ public class Tweet extends PATServlet {
     public Tweet(File file) {
         if (verbose) printParams();
         System.out.println("Parsing Tweets...");
-        //Instantiating the SentenceDetectorME class 
+        // initializing sentence detector 
         SentenceDetectorME detector = new SentenceDetectorME(sentenceModel);  
 
-        if (fromSerial) {
+        if (fromSerial) { // if serial file(s) exist, read from serial
             readMPTRSerializedFile();
         } else { // otherwise populate from original dataset
-            try { // MPTR PRT indexing
+            try { 
                 BufferedReader inputReader = new BufferedReader(new FileReader(file, StandardCharsets.UTF_8)); // create reader interface with UTF-8 encoding for macron support
                 String row;
                 DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("d/MM/yyyy");
@@ -43,7 +43,7 @@ public class Tweet extends PATServlet {
                     String[] splitMsg = detector.sentDetect(msg);
                     for (String sentence : splitMsg) {
                         for (String subSentence : sentence.split("((?<=[!?]))")) {
-                            if (!subSentence.equals("") && !subSentence.isEmpty() && subSentence.split(" ").length < MAX_WORDS_IN_SUGGESTION) { // prune empty phrases
+                            if (!subSentence.equals("") && !subSentence.isEmpty()) { // prune empty and large phrases
                                 //System.out.println(subSentence);
                                 addTermByChunks(processSentence(subSentence), round(timeRank, 4));
                             } 
@@ -53,7 +53,8 @@ public class Tweet extends PATServlet {
                 }
                 long stopTime = System.currentTimeMillis();
                 long elapsedTime = stopTime - startTime;
-                System.out.println("===== build time: " + elapsedTime + "ms ===== ");                inputReader.close();
+                System.out.println("===== build time: " + elapsedTime + "ms ===== ");                
+                inputReader.close();
                 System.out.println(String.format("%,d", (int)currPRT.termCount) + " phrases written from " + file);
             }
             catch (Exception e) {
