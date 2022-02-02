@@ -1,9 +1,6 @@
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -14,13 +11,6 @@ public class Tweet extends PATServlet {
     public Tweet(File file) {
         if (verbose) printParams();
         System.out.println("Parsing Tweets...");
-        try {
-            //Loading sentence detector model 
-            InputStream inputStream = new FileInputStream(language); 
-            sentenceModel = new SentenceModel(inputStream);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
         //Instantiating the SentenceDetectorME class 
         SentenceDetectorME detector = new SentenceDetectorME(sentenceModel);  
 

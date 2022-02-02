@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintStream;
@@ -126,6 +127,15 @@ public class PATServlet extends HttpServlet {
 
         availSer = checkSerial(serType);
         checkLanguage(DATA);
+
+        try {
+            //Loading sentence detector model 
+            InputStream inputStream = new FileInputStream(language); 
+            sentenceModel = new SentenceModel(inputStream);
+        } catch (IOException e) {
+            System.err.println("Failed to read in: " + language);
+            e.printStackTrace();
+        }
 
         if (fileTypeString.equals("rmt")) {
             fileType = dataType.rmt;

@@ -1,27 +1,16 @@
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import com.google.gson.Gson;
 
 import opennlp.tools.sentdetect.SentenceDetectorME;
-import opennlp.tools.sentdetect.SentenceModel;
 
 public class Mailbox extends PATServlet {  
 
     public Mailbox(File file) {
         if (verbose) printParams();
         System.out.println("Parsing Mailbox...");
-        try {
-            //Loading sentence detector model 
-            InputStream inputStream = new FileInputStream(language); 
-            sentenceModel = new SentenceModel(inputStream);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
         //Instantiating the SentenceDetectorME class 
         SentenceDetectorME detector = new SentenceDetectorME(sentenceModel); 
         if (fromSerial) {

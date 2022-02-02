@@ -1,9 +1,6 @@
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import opennlp.tools.sentdetect.*;
 
@@ -12,14 +9,6 @@ public class PlainText extends PATServlet {
     public PlainText(File file) {
         if (verbose) printParams();
         System.out.println("Parsing Text...");
-        try {
-            //Loading sentence detector model 
-            InputStream inputStream = new FileInputStream(language); 
-            sentenceModel = new SentenceModel(inputStream);
-        } catch (IOException e) {
-            System.err.println("Failed to read in: " + language);
-            e.printStackTrace();
-        }
         //Instantiating the SentenceDetectorME class 
         SentenceDetectorME detector = new SentenceDetectorME(sentenceModel);  
 
