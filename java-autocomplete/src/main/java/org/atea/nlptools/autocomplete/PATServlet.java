@@ -72,17 +72,17 @@ public class PATServlet extends HttpServlet {
     static String MPTR_EXPORT = "/terms.txt"; // most popular time ranker persistence file
     static String MPTR_SER = "/terms.ser"; // most popular time ranker persistence file
     static String BIGRAM_EXPORT = "/bigrams.txt"; // bigram ranker persistence file
-    static String POS_SAVE = "/positivePhrases.txt";
-    static String NEG_SAVE = "/negativePhrases.txt";
+    static String POS_SAVE = "/positivePhrases.txt"; // location of positive phrases
+    static String NEG_SAVE = "/negativePhrases.txt"; // location of negative phrases
     
-    String final_out = "";
-    Double final_value;
-    HashMap<String, Double> output;
-    SentenceModel sentenceModel = null;
-    Boolean triggerSuggestion = false;
-    HashMap<String, Integer> triggerCount = new HashMap<>();
-    enum serializeType { text, binary, none };
-    enum dataType {rmt, mbox, txt }; 
+    String final_out = ""; // final suggestion
+    Double final_value; // final ranking value
+    HashMap<String, Double> output; // top-k suggestions and ranking values
+    SentenceModel sentenceModel = null; // sentence tokenizer model
+    Boolean triggerSuggestion = false; // whether or not suggestion passes threshold
+    HashMap<String, Integer> triggerCount = new HashMap<>(); // count of threshold actuations
+    enum serializeType { text, binary, none }; // serialization technique
+    enum dataType {rmt, mbox, txt }; // type of dataset (ReoMaoriTwitter.csv, mailbox.json, text.txt)
 
     // options
     static Boolean fromSerial = false; // if tree should be populated from serialized file
@@ -223,36 +223,38 @@ public class PATServlet extends HttpServlet {
         // retrieve top ranking phrases that contain text_in as prefix
         List<TermAndFrequency> results_MPTR = null;
         List<TermAndFrequency> results_Bigram = null;
+        Set<Entry<String, Double>> bigramFinal = null;
         
         results_MPTR = currPRT.getTopkTermsForPrefix(text_in, TOPK); // retrieve top-k phrases
-        results_Bigram = currBigramPRT.getTopkTermsForPrefix(lastTwoWords, 0, false); // retrieve all bigrams that match the users input so far
-
-        //System.out.println("TOP-K: " + (TOPK));
-        // System.out.println("results_MPTR_size: " + results_MPTR.size());
-        // System.out.println("results_Bigram_size: " + results_Bigram.size());
-
-        if (results_Bigram.size() > 1) { // calculate minimum and maximum bigram ranking values
-            maxFreq = (int)results_Bigram.get(0).getTermFrequencyCount();
-            minFreq = (int)results_Bigram.get(results_Bigram.size()-1).getTermFrequencyCount();
-        } else {
-            System.out.println("No bigram results");
-        }
-
-        Map<String, Double> normalized_Bigrams = new HashMap<String, Double>();
-        for (TermAndFrequency result : results_Bigram) { // normalize bigram ranking values based on min and max
-            normalized_Bigrams.put(result.getTerm(), getNormalized(result.getTermFrequencyCount(), minFreq, maxFreq));
-        }
-
-        Set<Entry<String, Double>> bigramFinal = normalized_Bigrams.entrySet(); // convert to set
         
-        for (TermAndFrequency result : results_MPTR) {
-            for (Entry<String, Double> result_bi : bigramFinal) {
-                if (result.getTerm().trim().endsWith(result_bi.getKey().trim())) { // if a bigram result exists, add phrase to output
-                    double ranking_val = result.getTermFrequencyCount() + (BIGRAM_WEIGHT * result_bi.getValue());
-                    output.put(result.getTerm(), ranking_val);
-                }
+        if (currBigramPRT.termCount != 0) {
+            results_Bigram = currBigramPRT.getTopkTermsForPrefix(lastTwoWords, 0, false); // retrieve all bigrams that match the users input so far
+            if (results_Bigram.size() > 1) { // calculate minimum and maximum bigram ranking values
+                maxFreq = (int)results_Bigram.get(0).getTermFrequencyCount();
+                minFreq = (int)results_Bigram.get(results_Bigram.size()-1).getTermFrequencyCount();
+            } else {
+                System.out.println("No bigram results");
             }
-            output.put(result.getTerm(), result.getTermFrequencyCount()); // if no bigram results, add with MPTR metric
+            Map<String, Double> normalized_Bigrams = new HashMap<String, Double>();
+            for (TermAndFrequency result : results_Bigram) { // normalize bigram ranking values based on min and max
+                normalized_Bigrams.put(result.getTerm(), getNormalized(result.getTermFrequencyCount(), minFreq, maxFreq));
+            }
+            bigramFinal = normalized_Bigrams.entrySet(); // convert to set
+        } else {
+            System.out.println("Bigram not populated!");
+        }
+
+        for (TermAndFrequency result : results_MPTR) {
+            if (bigramFinal.size() > 0) {
+                for (Entry<String, Double> result_bi : bigramFinal) {
+                    if (result.getTerm().trim().endsWith(result_bi.getKey().trim())) { // if a bigram result exists, add phrase to output
+                        double ranking_val = result.getTermFrequencyCount() + (BIGRAM_WEIGHT * result_bi.getValue());
+                        output.put(result.getTerm(), ranking_val);
+                    }
+                }
+            } else {
+                output.put(result.getTerm(), result.getTermFrequencyCount()); // if no bigram results, add with MPTR metric
+            }
         }
         if (text_in.equals("")) {
             // label.setText("Suggestion:");
@@ -279,8 +281,6 @@ public class PATServlet extends HttpServlet {
             for (Entry<String,Double> m : sorted_output.entrySet()) {
                 out.println("\t" + m.getKey() + " : " + round(m.getValue(), 2));
             }
-            // out.println("Ranking value (top): " + round(final_value, 2));
-
             // move suggestion to top if exists in positive list
 
             List<String> adjusted_topk_out = new ArrayList<>();
