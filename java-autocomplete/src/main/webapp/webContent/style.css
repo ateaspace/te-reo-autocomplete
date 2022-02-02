@@ -47,6 +47,7 @@ html, body {
     color: grey;
     margin-top: 1%;
     cursor: pointer;
+    transition: 0.05s ease;
 }
 
 .result:hover {
@@ -58,14 +59,14 @@ html, body {
 }
 
 .cross {
-    margin-top: 1%;
+    margin-top: 1.25%;
     margin-left: 1%;
-    width: 2%;
-    height: 2%;
+    width: 2.5%;
+    height: 2.5%;
     cursor: pointer;
     visibility: hidden;
-    opacity: 0.75;
-    transition: 0.1s ease;
+    opacity: 0.6;
+    transition: 0.05s ease;
 }
 
 .cross:hover {
