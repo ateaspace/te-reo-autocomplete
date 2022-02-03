@@ -10,11 +10,14 @@ import packages.prt.TextSanitized;
 
 public class PlainText extends PATServlet {
 
+    private final int LINE_LENGTH_THRESHOLD = 250;
+    private SentenceDetectorME detector = new SentenceDetectorME(sentenceModel);  
+
     public PlainText(File file) {
         if (verbose) printParams();
         System.out.println("Parsing Text...");
         //Instantiating the SentenceDetectorME class 
-        SentenceDetectorME detector = new SentenceDetectorME(sentenceModel);  
+        
 
         if (fromSerial) {
             readMPTRSerializedFile();
@@ -22,33 +25,66 @@ public class PlainText extends PATServlet {
             try { // MPTR PRT indexing
                 BufferedReader inputReader = new BufferedReader(new FileReader(file, StandardCharsets.UTF_8)); // create reader interface with UTF-8 encoding for macron support
                 String row;
-                String[] splitMsg;
+                // String[] splitMsg;
                 int lineCount = 0;
-                int trueLineCount = 0;
+                // int trueLineCount = 0;
+                int wordThreshold = 100;
+                int charThreshold = 500;
+                int wordCount = 0;
+                int charCount = 0;
+                StringBuilder stringBuilder = new StringBuilder();
     
                 long startTime = System.currentTimeMillis();
+
                 while ((row = inputReader.readLine()) != null) {
-                    row = row.trim();
-                    if (!row.equals("") && !row.isEmpty()) {
-                        if (row.length() < 250) { // if row contains less than x chars, run OpenNLP, otherwise regex split
-                            splitMsg = detector.sentDetect(row);
+                    lineCount++;
+                    if (lineCount % 1000 == 0) {
+                        System.out.println("line: " + lineCount);
+                    }
+                    if (row.isEmpty()) {
+                        if (stringBuilder.length() > 0) {
+                            splitAndProcessChunk(stringBuilder.toString());
+                            stringBuilder.setLength(0);
+                        }
+                        wordCount = 0;
+                        charCount = 0;
+                    }
+                    else if (!row.equals("") && !row.isEmpty()) {
+                        if (wordCount < wordThreshold && charCount < charThreshold) {
+                            stringBuilder.append(" " + row.trim());
+                            wordCount += row.split(" ").length;
+                            charCount += row.length();
                         } else {
-                            splitMsg = row.split(MPTR_SPLIT);
-                        }
-                        
-                        for (String sentence : splitMsg) {
-                            if (!sentence.equals("") && !sentence.isEmpty()) { // prune empty and large phrases
-                                //System.out.println(sentence);
-                                addTermByChunks(processSentence(sentence), 1);
-                            } 
-                        }
-                        lineCount++;
-                        if (lineCount % 1000 == 0) {
-                            System.out.println("processing line: " + trueLineCount + " line length: " + row.length());
+                            splitAndProcessChunk(stringBuilder.toString());
+                            stringBuilder.setLength(0);
+                            wordCount = 0;
+                            charCount = 0;  
                         }
                     }
-                    trueLineCount++;
                 }
+
+                // while ((row = inputReader.readLine()) != null) {
+                //     row = row.trim();
+                //     if (!row.equals("") && !row.isEmpty()) {
+                //         if (row.length() < LINE_LENGTH_THRESHOLD) { // if row contains less than x chars, split with OpenNLP, otherwise regex split
+                //             splitMsg = detector.sentDetect(row);
+                //         } else {
+                //             splitMsg = row.split(MPTR_SPLIT);
+                //         }
+                        
+                //         for (String sentence : splitMsg) {
+                //             if (!sentence.equals("") && !sentence.isEmpty()) { // prune empty and large phrases
+                //                 //System.out.println(sentence);
+                //                 addTermByChunks(processSentence(sentence), 1);
+                //             } 
+                //         }
+                //         lineCount++;
+                //         if (lineCount % 1000 == 0) {
+                //             System.out.println("processing line: " + trueLineCount + " line length: " + row.length());
+                //         }
+                //     }
+                //     trueLineCount++;
+                // }
                 inputReader.close();
                 System.out.println(String.format("%,d", (int)currPRT.termCount) + " phrases written from " + file);
                 long stopTime = System.currentTimeMillis();
@@ -88,6 +124,21 @@ public class PlainText extends PATServlet {
                 e.printStackTrace();
             }
             writeSerialized();
+        }
+    }
+
+    public void splitAndProcessChunk(String chunk) {
+        String[] splitMsg;
+        if (chunk.length() < LINE_LENGTH_THRESHOLD) { // if row contains less than x chars, split with OpenNLP, otherwise regex split
+            splitMsg = detector.sentDetect(chunk);
+        } else {
+            splitMsg = chunk.split(MPTR_SPLIT);
+        }
+                    
+        for (String sentence : splitMsg) {
+            if (!sentence.equals("") && !sentence.isEmpty()) {
+                addTermByChunks(processSentence(sentence), 1);
+            }
         }
     }
 }
