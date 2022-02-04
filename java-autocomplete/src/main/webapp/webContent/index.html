@@ -11,16 +11,24 @@
             <textarea id="inputString" name="inputString" autocomplete="off" spellcheck="false" maxlength="5000" placeholder="Begin typing..." autofocus></textarea>
             <div class="flex-horizontal">
                 <div class="result" id="divResult0" title="Click to see this suggestion more">no suggestion</div>
-                <img src="images/cross.png" class="cross" id="cross0" title="Click to see this suggestion less">
+                <img src="images/cross.png" class="cross" id="cross0" title="Don't see this suggestion">
             </div>
             <div class="flex-horizontal">
                 <div class="result" id="divResult1" title="Click to see this suggestion more"></div>
-                <img src="images/cross.png" class="cross" id="cross1" title="Click to see this suggestion less">
+                <img src="images/cross.png" class="cross" id="cross1" title="Don't see this suggestion">
             </div>
             <div class="flex-horizontal">
                 <div class="result" id="divResult2" title="Click to see this suggestion more"></div>
-                <img src="images/cross.png" class="cross" id="cross2" title="Click to see this suggestion less">
+                <img src="images/cross.png" class="cross" id="cross2" title="Don't see this suggestion">
             </div>
+
+            <div class="selectpopup">
+                <div class="popupitems">
+                    <img src="images/cross.png" class="popupcross" id="popuptick" title="Add custom suggestion">
+                    <img src="images/cross.png" class="popupcross" id="popupcross" title="Remove custom suggestion">
+                </div>
+            </div>
+
             <script type="text/javascript" src="javascript.js"></script>
         </div>
     </body>

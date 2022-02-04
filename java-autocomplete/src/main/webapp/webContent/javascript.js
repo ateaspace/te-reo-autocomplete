@@ -4,6 +4,9 @@ var sug0;
 var sug1;
 var sug2;
 var state;
+var textareaX;
+var textareaY;
+var selection;
 
 // disable default TAB action
 $("#inputString").on('keydown', function(e) {
@@ -80,6 +83,56 @@ $("#divResult0").click(function(e){ suggClicked(e, "divResult0") });
 $("#divResult1").click(function(e){ suggClicked(e, "divResult1") });
 $("#divResult2").click(function(e){ suggClicked(e, "divResult2") });
 
+$("#cross0").click(function(){ crossClicked("crs0") });
+$("#cross1").click(function(){ crossClicked("crs1") });
+$("#cross2").click(function(){ crossClicked("crs2") });
+
+$("#inputString").on('mouseup', function(e) {
+    var inputElement = document.getElementById("inputString");
+    var selectionStart = inputElement.selectionStart;
+    var selectionEnd = inputElement.selectionEnd;
+    selection = inputElement.value.substring(selectionStart, selectionEnd);
+    if (selection.length > 0 && selection.trim() != "") {
+        console.log("selection: " + selection);
+        $("div.selectpopup").css({
+            'left': textareaX -20,
+            'top': textareaY -78
+        }).fadeIn(200);
+    } else {
+        $("div.selectpopup").fadeOut(200);
+    }
+});
+
+$("#inputString").on('mousedown', function(e) {
+    $("div.selectpopup").fadeOut(200);
+});
+
+$(document).ready(function(e) {
+    $(document).on('mousedown', function(e) {
+        textareaX = e.pageX;
+        textareaY = e.pageY;
+        $("div.selectpopup").fadeOut(200);
+    });
+});
+
+$("#popuptick").click(function(){ popupClicked("tick") });
+$("#popupcross").click(function(){ popupClicked("cross") });
+
+function popupClicked(type) {
+    if (type == "tick") {
+        if (stringValid(selection)) {
+            $.ajax({url: "pat", type: "post", dataType: "json", data: { custom: selection }, success: function(result) {
+                console.log("POST request sent with: " + selection);
+                console.log("result: " + result);
+            }});
+        }
+    } else if (type == "cross") {
+        console.log("cross clicked");
+    } else {
+        console.error("popupClicked() doesn't accept type: " + type);
+    }
+}
+
 function suggClicked(e, div) {
     var positiveSuggestion;
     var clickedDivText = document.getElementById(div).textContent;
@@ -102,10 +155,6 @@ function stringValid(str) {
         return true;
     }
 }
-
-$("#cross0").click(function(){ crossClicked("crs0") });
-$("#cross1").click(function(){ crossClicked("crs1") });
-$("#cross2").click(function(){ crossClicked("crs2") });
 
 function crossClicked(cross) {
     var negativeSuggestion;

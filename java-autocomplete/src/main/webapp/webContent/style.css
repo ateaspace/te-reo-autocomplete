@@ -51,7 +51,7 @@ html, body {
 }
 
 .result:hover {
-    color:rgb(0, 128, 0) !important; /* potentially bad practice? */
+    color:rgb(17, 128, 17) !important; /* potentially bad practice? */
 }
 
 .result:active {
@@ -64,7 +64,7 @@ html, body {
     width: 2.5%;
     height: 2.5%;
     cursor: pointer;
-    visibility: hidden;
+    /* visibility: hidden; */
     opacity: 0.6;
     transition: 0.05s ease;
 }
@@ -74,6 +74,56 @@ html, body {
 }
 
 .cross:active {
+    margin-top: 1.2%;
+    opacity: 1;
+}
+
+div.selectpopup {
+    display: none;
+    list-style: none;
+    position: absolute;
+    max-width: 5%; 
+    padding: 0.5em;
+    box-shadow: 3px 3px 15px -10px black;
+    border-radius: 10px;
+    /* border-bottom-left-radius: 0px */
+    background: rgb(202, 202, 202);
+}
+
+div.selectpopup::after {
+    content: '';
+    position: absolute;
+    border-style: solid;
+    border-width: 0px 0px 15px 15px;
+    border-color: transparent rgb(202, 202, 202);
+    width: 0;
+    z-index: 1;
+    bottom: -15px;
+    left: 15px;
+}
+
+div.selectpopup.popupitems {
+    display: inline-block;
+    justify-content: center;
+    align-items: center;
+    align-content: center;
+    margin: 1%;
+}
+
+.popupcross {
+    width: 40%;
+    height: 40%;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: 0.05s ease;
+}
+
+.popupcross:hover {
+    opacity: 1;
+    filter: brightness(1.25);
+}
+
+.popupcross:active {
     margin-top: 1.2%;
     opacity: 1;
 }
