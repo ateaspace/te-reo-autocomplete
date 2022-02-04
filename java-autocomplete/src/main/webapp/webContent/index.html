@@ -5,6 +5,7 @@
         <title>Autocomplete</title>
         <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
         <link rel="stylesheet" href="style.css">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
     </head>
     <body> 
         <div class="flex-vertical" id="divMain">
@@ -28,6 +29,19 @@
                     <img src="images/cross.png" class="popupcross" id="popupcross" title="Remove custom suggestion">
                 </div>
             </div>
+
+            <div class="listContainer">
+                <div class="listItem" id="positiveList">Positive Phrases<hr>
+                    <p></p>
+                </div>
+                <div class="listItem" id="negativeList">Negative Phrases<hr>
+                    <p></p>
+                </div>
+                <div class="listItem" id="customList">Custom Phrases<hr>
+                    <p></p>
+                </div>
+            </div>
+            <button type="button" class="btn btn-outline-success" id="listbutton">Show Lists</button>
 
             <script type="text/javascript" src="javascript.js"></script>
         </div>

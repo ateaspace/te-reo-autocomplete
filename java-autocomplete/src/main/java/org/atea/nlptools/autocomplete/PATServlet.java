@@ -56,7 +56,7 @@ public class PATServlet extends HttpServlet {
     final int TOPK = 3; // number of top phrases the ranking system should extract
     final int BIGRAM_WEIGHT = 10; // weight of bigram ranking value
     final int MAX_WORDS_IN_SUGGESTION = 15; // maximum number of words in suggestion
-    final int SNIPPET_SIZE = 50; // number of lines for language detection
+    final int SNIPPET_SIZE = 100; // number of lines for language detection
     final double TR_WEIGHT = 1.0; // weight of time ranking value
     final double THRESHOLD_WEIGHT = 0.75; // weight of ranking threshold
     final String MPTR_SPLIT = ",|\\.|!|\\?"; // regex values to split sentences 
@@ -78,6 +78,7 @@ public class PATServlet extends HttpServlet {
     static String BIGRAM_EXPORT = "/bigrams.txt"; // bigram ranker persistence file
     static String POS_SAVE = "/positivePhrases.txt"; // location of positive phrases
     static String NEG_SAVE = "/negativePhrases.txt"; // location of negative phrases
+    static String CUST_SAVE = "/customPhrases.txt"; // location of negative phrases
 
     static SentenceModel sentenceModel = null; // sentence tokenizer model
     
@@ -100,7 +101,7 @@ public class PATServlet extends HttpServlet {
     static serializeType serType = serializeType.text; // method of tree serialization (text, binary, none)
     static dataType fileType = dataType.rmt; // type of file (rmt, mbox, txt)
     static File DATA; // file to read sentence data from
-    static String availSer = "";
+    static String availSer = ""; // available serial files (both, noBigram)
 
     private final Gson gsonInstance = new Gson(); // instance of gson for parsing response
 
@@ -125,7 +126,7 @@ public class PATServlet extends HttpServlet {
 
         // option override
         language = "auto";
-        forceOriginal = true;
+        // forceOriginal = true;
 
         availSer = checkSerial(serType);
         checkLanguage(DATA);
@@ -161,49 +162,91 @@ public class PATServlet extends HttpServlet {
         if (request == null) {
             response.sendError(400, "The 'inputString' parameter must be supplied.");
         }
-        String inputStringParameter = request.getParameter("inputString");
-        if (inputStringParameter == null) {
-            response.sendError(400, "The 'inputString' parameter must be non-empty.");
-        }
-        String[] outputStrings = process(inputStringParameter);
-        // write outputString to json obj
 
-        writer.beginObject();
-        if (outputStrings.length == 0 || outputStrings[0].equals("ns")) { // if all suggestions have been removed due to negativePhrase list
-            writer.name("state");
-            writer.value("ns");
-        } else {
-            if (!triggerSuggestion){
+        String inputStringParameter = request.getParameter("inputString");
+        String updateParameter = request.getParameter("update");
+
+        if (updateParameter != null) {
+            writer.beginObject();
+            writer.name("positives");
+            writer.beginArray();
+            for (String s : getAllPhrasesFromFile("positive")) {
+                writer.value(s);
+            }
+            writer.endArray();
+            writer.name("negatives");
+            writer.beginArray();
+            for (String s : getAllPhrasesFromFile("negative")) {
+                writer.value(s);
+            }
+            writer.endArray();
+            writer.name("customs");
+            writer.beginArray();
+            for (String s : getAllPhrasesFromFile("custom")) {
+                writer.value(s);
+            }
+            writer.endArray();
+            writer.endObject();
+            writer.flush();
+        } else if (inputStringParameter != null) {
+            String[] outputStrings = process(inputStringParameter);
+
+            writer.beginObject();
+            if (outputStrings.length == 0 || outputStrings[0].equals("ns")) { // if all suggestions have been removed due to negativePhrase list
                 writer.name("state");
-                writer.value("ft");
+                writer.value("ns");
             } else {
-                writer.name("state");
-                writer.value("pt");
+                if (!triggerSuggestion){
+                    writer.name("state");
+                    writer.value("ft");
+                } else {
+                    writer.name("state");
+                    writer.value("pt");
+                }
+                for (int i = 0; i < outputStrings.length; i++) {
+                    writer.name("sg" + i);
+                    writer.value(outputStrings[i]);
+                }
             }
-            for (int i = 0; i < outputStrings.length; i++) {
-                writer.name("sg" + i);
-                writer.value(outputStrings[i]);
-            }
+            writer.endObject();
+            writer.flush();
+        } else {
+            response.sendError(400, "The parameter must be non-empty. Please supply a update or inputString parameter.");
         }
-        writer.endObject();
-        writer.flush();
+        
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String res = null;
+        response.setContentType("application/json; charset=UTF-8");
+        final JsonWriter writer = gsonInstance.newJsonWriter(response.getWriter());
         if (request == null) {
             response.sendError(400, "A 'positive' or 'negative' string parameter must be supplied.");
         }
         String positiveParameter = request.getParameter("positive");
         String negativeParameter = request.getParameter("negative");
+        String customParameter = request.getParameter("custom");
 
-        if (positiveParameter != null && negativeParameter == null) {
-            addPosNegPhrase(positiveParameter, "positive");
-        } else if (positiveParameter == null && negativeParameter != null) {
-            addPosNegPhrase(negativeParameter, "negative");
+        if (positiveParameter != null && negativeParameter == null && customParameter == null) {
+            res = addPosNegPhrase(positiveParameter, "positive");
+        } else if (positiveParameter == null && negativeParameter != null && customParameter == null) {
+            res = addPosNegPhrase(negativeParameter, "negative");
+        } else if (positiveParameter == null && negativeParameter == null && customParameter != null) {
+            res = addPosNegPhrase(customParameter, "custom");
         } else {
             response.sendError(400, "Request recieved is incorrectly formed. Supply either a 'positive' or 'negative' string parameter.");
         }
+
+        writer.beginObject();
+        writer.name("success");
+        if (res.equals("aif")) {
+            writer.value(false);
+        } else if (res.equals("suc")) {
+            writer.value(true);
+        }
+        writer.endObject();
+        writer.flush();
     }
 
     public String[] process(String input) {
@@ -258,7 +301,7 @@ public class PATServlet extends HttpServlet {
                 }
                 bigramFinal = normalized_Bigrams.entrySet(); // convert to set
             } else {
-                System.out.println("Bigram not populated!");
+                System.out.println("Bigram not populated.");
             }
 
             for (TermAndFrequency result : results_MPTR) {
@@ -435,7 +478,6 @@ public class PATServlet extends HttpServlet {
             for (int i = 0; i < SNIPPET_SIZE; i++) {
                 row = inputReader.readLine();
                 out = out + " " + row;
-                // out = out + " " + row.split("\t")[1];
             }
             inputReader.close();
             return out;
@@ -520,21 +562,52 @@ public class PATServlet extends HttpServlet {
         return "";
     }
 
-    public void addPosNegPhrase(String phrase, String type) throws IOException {
+    public List<String> getAllPhrasesFromFile(String type) {
+        String filename = null;
+        String row;
+        List<String> output = new ArrayList<>();
+        if (type.equals("positive")) {
+            filename = SAVE_DIR + POS_SAVE;
+        } else if (type.equals("negative")) {
+            filename = SAVE_DIR + NEG_SAVE;
+        } else if (type.equals("custom")) {
+            filename = SAVE_DIR + CUST_SAVE;
+        }
+        File f = new File(filename);
+        if (f.exists()) {
+            try (BufferedReader inputReader = new BufferedReader(new FileReader(f, StandardCharsets.UTF_8))) {
+                while ((row = inputReader.readLine()) != null) {
+                    output.add(row);
+                }
+                inputReader.close();
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return output;
+    }
+
+    public String addPosNegPhrase(String phrase, String type) throws IOException {
         String filename = null;
         FileWriter fw = null;
         if (type.equals("positive")) {
             filename = SAVE_DIR + POS_SAVE;
-        } else {
+        } else if (type.equals("negative")) {
             filename = SAVE_DIR + NEG_SAVE;
+        } else if (type.equals("custom")) {
+            filename = SAVE_DIR + CUST_SAVE;
         }
         fw = new FileWriter(filename, true); // true: append
         if (!lineExistsInFile(phrase, filename)) {
             fw.write(phrase + "\n");
             fw.close();
             System.out.println("\"" + phrase + "\" added to " + type + "Phrases.txt");
+            return "suc";
         } else {
+            fw.close();
             System.err.println("\"" + phrase + "\" already exists in " + type + "Phrases file");
+            return "aif";
         }
     }
 
@@ -551,8 +624,6 @@ public class PATServlet extends HttpServlet {
             catch (Exception e) {
                 e.printStackTrace();
             }
-        } else {
-            // System.err.println("File doesn't exist: " + file);
         }
         return false;
     }

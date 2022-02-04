@@ -4,6 +4,11 @@ html, body {
     margin: 0;
 }
 
+hr {
+    margin-top: 0.2em !important;
+    margin-bottom: 0.2em !important;
+}
+
 #divMain {
     /* text-align: center; */
     padding-top: 5%;
@@ -64,7 +69,7 @@ html, body {
     width: 2.5%;
     height: 2.5%;
     cursor: pointer;
-    /* visibility: hidden; */
+    visibility: hidden;
     opacity: 0.6;
     transition: 0.05s ease;
 }
@@ -86,7 +91,6 @@ div.selectpopup {
     padding: 0.5em;
     box-shadow: 3px 3px 15px -10px black;
     border-radius: 10px;
-    /* border-bottom-left-radius: 0px */
     background: rgb(202, 202, 202);
 }
 
@@ -126,4 +130,48 @@ div.selectpopup.popupitems {
 .popupcross:active {
     margin-top: 1.2%;
     opacity: 1;
+}
+
+#listbutton {
+    position: absolute;
+    left: 2em;
+    bottom: 2em;
+}
+
+.listContainer {
+    font-size: 20px;
+    color: rgb(65, 65, 65);
+    background-color: rgba(255, 255, 255, 0.4);
+    position: absolute;
+    display: none;
+    border: 2px solid rgb(170, 31, 37);
+    left: 2em;
+    bottom: 6em;
+    width: 40vw;
+    max-height: 60vh;
+    min-height: 20vh;
+    overflow-y: scroll;
+}
+
+.listItem {
+    width: 33.3333%;
+    padding: 0.5em;
+}
+
+.listItem p {
+    font-size: 16px;
+    overflow-wrap: normal;
+    cursor: pointer;
+}
+
+#positiveList {
+    float: left;
+}
+
+#negativeList {
+    display: inline-block;
+}
+
+#customList {
+    float: right;
 }
