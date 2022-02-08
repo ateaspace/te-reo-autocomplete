@@ -1,4 +1,5 @@
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -227,22 +228,26 @@ public class PATServlet extends HttpServlet {
         String positiveParameter = request.getParameter("positive");
         String negativeParameter = request.getParameter("negative");
         String customParameter = request.getParameter("custom");
+        String removalParameter = request.getParameter("remove");
+        String listTypeParameter = request.getParameter("list");
 
-        if (positiveParameter != null && negativeParameter == null && customParameter == null) {
+        if (positiveParameter != null) {
             res = addPosNegPhrase(positiveParameter, "positive");
-        } else if (positiveParameter == null && negativeParameter != null && customParameter == null) {
+        } else if (negativeParameter != null) {
             res = addPosNegPhrase(negativeParameter, "negative");
-        } else if (positiveParameter == null && negativeParameter == null && customParameter != null) {
+        } else if (customParameter != null) {
             res = addPosNegPhrase(customParameter, "custom");
+        } else if (removalParameter != null && listTypeParameter != null) {
+            res = removePhrase(removalParameter, listTypeParameter);
         } else {
             response.sendError(400, "Request recieved is incorrectly formed. Supply either a 'positive' or 'negative' string parameter.");
         }
 
         writer.beginObject();
         writer.name("success");
-        if (res.equals("aif")) {
+        if (res.equals("aif") || res.equals("nif")) { // already in file or not in file
             writer.value(false);
-        } else if (res.equals("suc")) {
+        } else if (res.equals("suc")) { // success
             writer.value(true);
         }
         writer.endObject();
@@ -586,6 +591,38 @@ public class PATServlet extends HttpServlet {
             }
         }
         return output;
+    }
+
+    public String removePhrase(String phrase, String type) throws IOException {
+        String filename = null;
+        if (type.equals("positive")) {
+            filename = SAVE_DIR + POS_SAVE;
+        } else if (type.equals("negative")) {
+            filename = SAVE_DIR + NEG_SAVE;
+        } else if (type.equals("custom")) {
+            filename = SAVE_DIR + CUST_SAVE;
+        }
+        if (lineExistsInFile(phrase, filename)) {
+            File file = new File(filename);
+            File fileTMP = new File(filename.replace("Phrases", "PhrasesTMP"));
+            BufferedReader reader = new BufferedReader(new FileReader(file));
+            BufferedWriter writer = new BufferedWriter(new FileWriter(fileTMP));
+            String currentLine;
+
+            while ((currentLine = reader.readLine()) != null) {
+                if (currentLine.equals(phrase)) continue;
+                writer.write(currentLine + "\n");
+            }
+            writer.close(); 
+            reader.close(); 
+            file.delete();
+            fileTMP.renameTo(file);
+            System.out.println("\"" + phrase + "\" removed from " + type + "Phrases.txt");
+            return "suc";
+        } else {
+            System.out.println("\"" + phrase + "\" doesn't exist in " + type + "Phrases.txt");
+            return "nif";
+        }
     }
 
     public String addPosNegPhrase(String phrase, String type) throws IOException {
