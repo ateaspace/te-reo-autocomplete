@@ -9,6 +9,9 @@ $(document).ready(function(){
     var textareaX;
     var textareaY;
     var selection;
+    var positivePhrases;
+    var negativePhrases;
+    var customPhrases;
 
     updateLists();
 
@@ -64,7 +67,6 @@ $(document).ready(function(){
                         sug1 = result.sg1; 
                         sug2 = result.sg2;
                         setResults(sug0, sug1, sug2, state);
-                        sug1 = undefined;
                     } else if (state == "pt") { // passed threshold
                         sug0 = result.sg0; 
                         sug1 = result.sg1; 
@@ -123,47 +125,78 @@ $(document).ready(function(){
     $("#listbutton").click(function(){
         var button = document.getElementById("listbutton");
         if (button.textContent == "Show Lists") {
-            $(".listContainer").fadeIn(200);
+            $(".listContainer").fadeIn(150);
             button.textContent = "Hide Lists";
         } else {
-            $(".listContainer").fadeOut(200);
+            $(".listContainer").fadeOut(150);
             button.textContent = "Show Lists";
         }
+    });
+
+    $(document).on('click', '.listPhrase', function(e) {
+        listItemClicked(e.target.id);
     });
 
     function updateLists() {
         console.log("updating lists...")
         $.ajax({url: "pat", type: "get", dataType: "json", data: { update: true }, success: function(result) {
-            var positivePhrases = result.positives;
-            var negativePhrases = result.negatives;
-            var customPhrases = result.customs;
+            positivePhrases = result.positives;
+            negativePhrases = result.negatives;
+            customPhrases = result.customs;
             var positiveListDiv = document.getElementById("positiveList").getElementsByTagName("p")[0];
             var negativeListDiv = document.getElementById("negativeList").getElementsByTagName("p")[0];
             var customListDiv = document.getElementById("customList").getElementsByTagName("p")[0];
-            console.log("positivePhrases: " + positivePhrases);
-            console.log("negativePhrases: " + negativePhrases);
-            console.log("customPhrases: " + customPhrases);
-
-            positivePhrases.forEach(addTextToList);
+            positiveListDiv.innerHTML = "";
+            negativeListDiv.innerHTML = "";
+            customListDiv.innerHTML = "";
 
             for (idx in positivePhrases) {
-                addTextToList(positiveListDiv, positivePhrases[idx]);
+                positiveListDiv.innerHTML += "<div class=\"listPhrase\" id=\"plist" + idx + "\">" + positivePhrases[idx] + "</div>";
+                // addTextToList(positiveListDiv, positivePhrases[idx]);
             }
             for (idx in negativePhrases) {
-                addTextToList(negativeListDiv, negativePhrases[idx]);
+                negativeListDiv.innerHTML += "<div class=\"listPhrase\" id=\"nlist" + idx + "\">" + negativePhrases[idx] + "</div>";
+                // addTextToList(negativeListDiv, negativePhrases[idx]);
             }
             for (idx in customPhrases) {
-                addTextToList(customListDiv, customPhrases[idx]);
+                customListDiv.innerHTML += "<div class=\"listPhrase\" id=\"clist" + idx + "\">" + customPhrases[idx] + "</div>";
+                // addTextToList(customListDiv, customPhrases[idx]);
             }
         }});
     }
 
-    function addTextToList(div, txt) {
-        div.innerHTML += txt + "<br>";
+    // function addTextToList(div, txt) {
+    //     div.innerHTML += txt + "<br>";
+    // }
+
+    function listItemClicked(id) {
+        if (id.startsWith("plist")) {
+            removeFromList(positivePhrases[id.slice(-1)], "positive");
+        } else if (id.startsWith("nlist")) {
+            removeFromList(negativePhrases[id.slice(-1)], "negative");
+        } else if (id.startsWith("clist")) {
+            removeFromList(customPhrases[id.slice(-1)], "custom");
+        } else {
+            console.log("ERROR: list item id not recognized: " + id);
+        }
+    }
+
+    function removeFromList(phrase, listType) {
+        $.ajax({url: "pat", type: "post", dataType: "json", data: { remove: phrase, list: listType }, success: function(result) {
+            console.log("POST request sent with: " + selection);
+            console.log("result: " + result);
+            if (result.success == true) {
+                updateLists();
+            } else if (result.success == false) {
+                // not in list
+                console.log("phrase not in list");
+            } else {
+                console.log("return value from POST unexpected: " + result.success);
+            }
+        }});
     }
 
     function popupClicked(type) {
-        updateLists();
         if (type == "tick") {
             var tickElement = document.getElementById("customList").getElementsByTagName("p")[0];
             if (stringValid(selection)) {
@@ -189,6 +222,7 @@ $(document).ready(function(){
         } else {
             console.error("popupClicked() doesn't accept type: " + type);
         }
+        updateLists();
     }
 
     function suggClicked(e, div) {
@@ -204,6 +238,7 @@ $(document).ready(function(){
                 console.log("result: " + result);
             }});
         }
+        updateLists();
     }
 
     function stringValid(str) {
@@ -223,12 +258,13 @@ $(document).ready(function(){
         } else if (cross == "crs2" && stringValid(sug2)) {
             negativeSuggestion = sug2;
         } else {
-            console.log("given cross does not exist: " + cross);
+            console.log("given cross does not exist: " + cross + " or string is not valid: " + negativeSuggestion);
         }
         $.ajax({url: "pat", type: "post", dataType: "json", data: { negative: negativeSuggestion }, success: function(result) {
             console.log("POST request sent with: " + negativeSuggestion);
             console.log("result: " + result);        
         }});
+        updateLists();
     }
 
     // writes given string to result div

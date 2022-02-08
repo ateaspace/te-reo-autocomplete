@@ -33,7 +33,7 @@ hr {
     font-family: 'Fira Sans', sans-serif;
     resize: vertical;
     width: 40vw;
-    height: 10vh;
+    height: 15vh;
     max-height: 40vh;
     padding: 1%;
     transition: border 0.2s ease;
@@ -87,7 +87,7 @@ div.selectpopup {
     display: none;
     list-style: none;
     position: absolute;
-    max-width: 5%; 
+    width: 3em; 
     padding: 0.5em;
     box-shadow: 3px 3px 15px -10px black;
     border-radius: 10px;
@@ -115,16 +115,15 @@ div.selectpopup.popupitems {
 }
 
 .popupcross {
-    width: 40%;
-    height: 40%;
+    width: 2em;
+    height: 2em;
     cursor: pointer;
-    opacity: 0.6;
     transition: 0.05s ease;
+    filter: brightness(1.2);
 }
 
 .popupcross:hover {
-    opacity: 1;
-    filter: brightness(1.25);
+    filter: brightness(0.8);
 }
 
 .popupcross:active {
@@ -140,25 +139,26 @@ div.selectpopup.popupitems {
 
 .listContainer {
     font-size: 20px;
-    color: rgb(65, 65, 65);
     background-color: rgba(255, 255, 255, 0.4);
     position: absolute;
     display: none;
     border: 2px solid rgb(170, 31, 37);
-    left: 2em;
-    bottom: 6em;
+    left: 1.5em;
+    bottom: 5em;
     width: 40vw;
-    max-height: 60vh;
+    max-height: 50vh;
     min-height: 20vh;
     overflow-y: scroll;
 }
 
-.listItem {
+.listColumn {
+    color: rgb(24, 24, 24);
     width: 33.3333%;
     padding: 0.5em;
 }
 
-.listItem p {
+.listColumn p {
+    color: rgb(65, 65, 65);
     font-size: 16px;
     overflow-wrap: normal;
     cursor: pointer;
@@ -174,4 +174,15 @@ div.selectpopup.popupitems {
 
 #customList {
     float: right;
+}
+
+.listPhrase {
+    color: rgb(65, 65, 65);
+    text-decoration: none;
+    transition: 0.1s ease;
+}
+
+.listPhrase:hover {
+    color: rgb(102, 19, 23);
+    text-decoration: line-through;
 }
