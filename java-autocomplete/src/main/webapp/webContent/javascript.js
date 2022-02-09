@@ -2,9 +2,7 @@ $(document).ready(function(){
 
     var lastSent = "";
     var KEY_TAB = 9;
-    var sug0;
-    var sug1;
-    var sug2;
+    var sugs = [];
     var state;
     var textareaX;
     var textareaY;
@@ -32,14 +30,14 @@ $(document).ready(function(){
         var currSentence = beforeCursor.split(/[.?!]\s|[\\\n\r\t]/).pop(); // all text between cursor location and last end-of-sentence character
 
         // console.log(e.which);
-        if (e.which == KEY_TAB || suggClicked) { 
+        if (e.which == KEY_TAB || suggClicked) { // insert selection
             // console.log("state: " + state);
-            if ((sug0 != undefined && state == "pt") || (suggClicked)) {
+            if ((sugs[0] != undefined && state == "pt") || (suggClicked)) { 
                 var currSuggestion;
                 if (suggClicked) {
                     currSuggestion = suggestion;
                 } else {
-                    currSuggestion = sug0;
+                    currSuggestion = sugs[0];
                 }
                 var newCursorLoc = cursorLoc + (currSuggestion.length - currSentence.length); // calculate new cursor position
 
@@ -53,32 +51,74 @@ $(document).ready(function(){
                 state = "ns";
                 setResult("no suggestion");
             }
-        } else {
+        } else { // update suggestions
             if (currSentence.length < 2 || currSentence.trim().length == 0) { // prune single and empty character inputs 
                 setResult("no suggestion");
             } else if (lastSent != currSentence) { // prevent duplicate requests
                 // create get request with value of text field
                 $.ajax({url: "pat", type: "get", dataType: "json", data: {inputString: currSentence}, success: function(result) { 
                     state = result.state;
+                    sugs[0] = result.sg0; 
+                    sugs[1] = result.sg1; 
+                    sugs[2] = result.sg2;
                     if (state == "ns") { // no suggestion
                         setResult("no suggestion");
-                    } else if (state == "ft") { // failed threshold
-                        sug0 = result.sg0; 
-                        sug1 = result.sg1; 
-                        sug2 = result.sg2;
-                        setResults(sug0, sug1, sug2, state);
-                    } else if (state == "pt") { // passed threshold
-                        sug0 = result.sg0; 
-                        sug1 = result.sg1; 
-                        sug2 = result.sg2;
-                        setResults(sug0, sug1, sug2, state);
+                    } else if (state == "ft" || state == "pt") { // if suggestions exist
+                        if (positivePhrases.length > 0) {
+                            var changeMade = false;
+                            for (i in sugs) {
+                                for (j in positivePhrases) {
+                                    if (sugs[i] == positivePhrases[j]) {
+                                        var tmp = sugs[0]; // save top
+                                        sugs[0] = sugs[i]; // set top to match
+                                        sugs[i] = tmp; // set match to top (swap)
+                                        changeMade = true;
+                                        setResults(sugs[0], sugs[1], sugs[2], "pt");
+                                    }
+                                }
+                            }
+                            if (!changeMade) setResults(sugs[0], sugs[1], sugs[2], state);
+                        } 
+                        if (negativePhrases.length > 0) {
+                            var changeMade = false;
+                            for (i in sugs) {
+                                for (j in negativePhrases) {
+                                    if (sugs[i] == negativePhrases[j]) {
+                                        sugs.splice(i, 1);
+                                        changeMade = true;
+                                    }
+                                }
+                            }
+                            setResults(sugs[0], sugs[1], sugs[2], state);
+                        }                       
                     } else {
                         console.log("given state does not exist: " + state);
                     }
+                    if (customPhrases.length > 0) {
+                        var changeMade = false;
+                        for (j in customPhrases) {
+                            if (sanitize(customPhrases[j]).startsWith(sanitize(currSentence))) {
+                                if ((sanitize(customPhrases[j]).length / 2) < sanitize(currSentence).length) {
+                                    console.log("half of custPhrase length: " + sanitize(customPhrases[j]).length / 2);
+                                    console.log("curr length: " + sanitize(currSentence).length);
+                                    sugs.unshift(customPhrases[j]);
+                                    sugs = sugs.slice(0, 3);
+                                    setResults(sugs[0], sugs[1], sugs[2], "pt");
+                                    changeMade = true;
+                                }
+                                
+                            }
+                        }
+                        if (!changeMade) setResults(sugs[0], sugs[1], sugs[2], state);
+                    }   
                     lastSent = currSentence;
                 }}); 
             }
         }
+    }
+
+    function sanitize(str) {
+        return str.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
     }
 
     $("#inputString").on('keyup', function(e) {
@@ -242,12 +282,12 @@ $(document).ready(function(){
 
     function crossClicked(cross) {
         var negativeSuggestion;
-        if (cross == "crs0" && stringValid(sug0)) {
-            negativeSuggestion = sug0;
-        } else if (cross == "crs1" && stringValid(sug1)) {
-            negativeSuggestion = sug1;
-        } else if (cross == "crs2" && stringValid(sug2)) {
-            negativeSuggestion = sug2;
+        if (cross == "crs0" && stringValid(sugs[0])) {
+            negativeSuggestion = sugs[0];
+        } else if (cross == "crs1" && stringValid(sugs[1])) {
+            negativeSuggestion = sugs[1];
+        } else if (cross == "crs2" && stringValid(sugs[2])) {
+            negativeSuggestion = sugs[2];
         } else {
             console.log("given cross does not exist: " + cross + " or string is not valid: " + negativeSuggestion);
         }
@@ -273,6 +313,7 @@ $(document).ready(function(){
     // writes given string to result div
     function setResults(s0, s1, s2, st) {
         resetResults();
+        state = st;
         if (st == "pt") {
             $("#divResult0").css({'color':'black'}); 
         } else {
