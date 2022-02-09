@@ -139,33 +139,25 @@ $(document).ready(function(){
 
     function updateLists() {
         console.log("updating lists...")
+        positivePhrases = JSON.parse(localStorage.getItem("storePos"));
+        negativePhrases = JSON.parse(localStorage.getItem("storeNeg"));
+        customPhrases = JSON.parse(localStorage.getItem("storeCus"));
+        var positiveListDiv = document.getElementById("positiveList").getElementsByTagName("p")[0];
+        var negativeListDiv = document.getElementById("negativeList").getElementsByTagName("p")[0];
+        var customListDiv = document.getElementById("customList").getElementsByTagName("p")[0];
+        positiveListDiv.innerHTML = "";
+        negativeListDiv.innerHTML = "";
+        customListDiv.innerHTML = "";
 
-        // $.ajax({url: "pat", type: "get", dataType: "json", data: { update: true }, success: function(result) {
-            // positivePhrases = result.positives;
-            // negativePhrases = result.negatives;
-            // customPhrases = result.customs;
-            positivePhrases = JSON.parse(localStorage.getItem("storePos"));
-            negativePhrases = JSON.parse(localStorage.getItem("storeNeg"));
-            customPhrases = JSON.parse(localStorage.getItem("storeCus"));
-            var positiveListDiv = document.getElementById("positiveList").getElementsByTagName("p")[0];
-            var negativeListDiv = document.getElementById("negativeList").getElementsByTagName("p")[0];
-            var customListDiv = document.getElementById("customList").getElementsByTagName("p")[0];
-            positiveListDiv.innerHTML = "";
-            negativeListDiv.innerHTML = "";
-            customListDiv.innerHTML = "";
-
-            for (idx in positivePhrases) {
-                positiveListDiv.innerHTML += "<div class=\"listPhrase\" id=\"plist" + idx + "\">" + positivePhrases[idx] + "</div>";
-            }
-            for (idx in negativePhrases) {
-                negativeListDiv.innerHTML += "<div class=\"listPhrase\" id=\"nlist" + idx + "\">" + negativePhrases[idx] + "</div>";
-            }
-            for (idx in customPhrases) {
-                customListDiv.innerHTML += "<div class=\"listPhrase\" id=\"clist" + idx + "\">" + customPhrases[idx] + "</div>";
-            }
-        // }});
-
-        
+        for (idx in positivePhrases) {
+            positiveListDiv.innerHTML += "<div class=\"listPhrase\" id=\"plist" + idx + "\">" + positivePhrases[idx] + "</div>";
+        }
+        for (idx in negativePhrases) {
+            negativeListDiv.innerHTML += "<div class=\"listPhrase\" id=\"nlist" + idx + "\">" + negativePhrases[idx] + "</div>";
+        }
+        for (idx in customPhrases) {
+            customListDiv.innerHTML += "<div class=\"listPhrase\" id=\"clist" + idx + "\">" + customPhrases[idx] + "</div>";
+        }
     }
 
     function listItemClicked(id) {
@@ -191,18 +183,6 @@ $(document).ready(function(){
             console.log("Phrase doesn't exist in list");
         }
         updateLists();
-        // $.ajax({url: "pat", type: "post", dataType: "json", data: { remove: phrase, list: listType }, success: function(result) {
-        //     console.log("POST request sent with: " + selection);
-        //     console.log("result: " + result);
-        //     if (result.success == true) {
-        //         updateLists();
-        //     } else if (result.success == false) {
-        //         // not in list
-        //         console.log("phrase not in list");
-        //     } else {
-        //         console.log("return value from POST unexpected: " + result.success);
-        //     }
-        // }});
     }
 
     function popupClicked(type) {
@@ -215,23 +195,6 @@ $(document).ready(function(){
                 } else {
                     console.log("Phrase already exists in custom list: " + selection);
                 }
-
-                // $.ajax({url: "pat", type: "post", dataType: "json", data: { custom: selection }, success: function(result) {
-                //     console.log("POST request sent with: " + selection);
-                //     console.log("result: " + result);
-                //     if (result.success == true) {
-                //         // add to list
-                //         tickElement.innerHTML = tickElement.innerHTML + selection;
-                //         if (tickElement.innerHTML.length > 0) {
-                //             tickElement.innerHTML = tickElement.innerHTML + "<br>";
-                //         }
-                //     } else if (result.success == false) {
-                //         // already in list
-                //         console.log("custom phrase already exists in list");
-                //     } else {
-                //         console.log("return value from POST unexpected: " + result.success);
-                //     }
-                // }});
             }
         } else {
             console.error("popupClicked() doesn't accept type: " + type);
@@ -252,11 +215,6 @@ $(document).ready(function(){
             } else {
                 console.log("Phrase already exists in positive list: " + clickedDivText);
             }
-
-            // $.ajax({url: "pat", type: "post", dataType: "json", data: { positive: positiveSuggestion }, success: function(result) {
-            //     console.log("POST request sent with: " + positiveSuggestion);
-            //     console.log("result: " + result);
-            // }});
         } else {
             console.log("Invalid string: " + clickedDivText);
         }
@@ -300,11 +258,6 @@ $(document).ready(function(){
         } else {
             console.log("Phrase already exists in negative list: " + negativeSuggestion);
         }
-
-        // $.ajax({url: "pat", type: "post", dataType: "json", data: { negative: negativeSuggestion }, success: function(result) {
-        //     console.log("POST request sent with: " + negativeSuggestion);
-        //     console.log("result: " + result);        
-        // }});
         updateLists();
     }
 
