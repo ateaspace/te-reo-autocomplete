@@ -61,6 +61,7 @@ $(document).ready(function(){
                     sugs[0] = result.sg0; 
                     sugs[1] = result.sg1; 
                     sugs[2] = result.sg2;
+                    setResults(sugs[0], sugs[1], sugs[2], state);
                     if (state == "ns") { // no suggestion
                         setResult("no suggestion");
                     } else if (state == "ft" || state == "pt") { // if suggestions exist
@@ -98,6 +99,7 @@ $(document).ready(function(){
                         var changeMade = false;
                         for (j in customPhrases) {
                             if (sanitize(customPhrases[j]).startsWith(sanitize(currSentence))) {
+                                // if (levenshtein(sanitize(customPhrases[j]), sanitize(currSentence)) < 5) {};
                                 if ((sanitize(customPhrases[j]).length / 2) < sanitize(currSentence).length) {
                                     console.log("half of custPhrase length: " + sanitize(customPhrases[j]).length / 2);
                                     console.log("curr length: " + sanitize(currSentence).length);
@@ -106,7 +108,6 @@ $(document).ready(function(){
                                     setResults(sugs[0], sugs[1], sugs[2], "pt");
                                     changeMade = true;
                                 }
-                                
                             }
                         }
                         if (!changeMade) setResults(sugs[0], sugs[1], sugs[2], state);
@@ -135,6 +136,15 @@ $(document).ready(function(){
 
     $("#inputString").on('mouseup', function(e) {
         var inputElement = document.getElementById("inputString");
+
+        var entireSelection = document.getSelection(),
+            range = entireSelection.getRangeAt(0),
+            clientRects = range.getClientRects();
+        // console.log(clientRects);
+
+        // console.log("clientRects left: " + clientRects[0].left);
+        // console.log("clientRects top: " + clientRects[0].top);
+
         var selectionStart = inputElement.selectionStart;
         var selectionEnd = inputElement.selectionEnd;
         selection = inputElement.value.substring(selectionStart, selectionEnd);
@@ -247,14 +257,13 @@ $(document).ready(function(){
 
         if (stringValid(clickedDivText)) {
             if (positivePhrases == null) { 
-                processOnChange(e, true, clickedDivText);
                 addEntry("storePos", clickedDivText);
             } else if (!positivePhrases.includes(clickedDivText)){
-                processOnChange(e, true, clickedDivText);
                 addEntry("storePos", clickedDivText);
             } else {
                 console.log("Phrase already exists in positive list: " + clickedDivText);
             }
+            processOnChange(e, true, clickedDivText);
         } else {
             console.log("Invalid string: " + clickedDivText);
         }

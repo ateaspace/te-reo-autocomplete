@@ -19,13 +19,19 @@ hr {
     display: flex;
     flex-wrap: wrap;
     flex-direction: column;
+    width: 40vw;
+    margin-right: auto; 
+    margin-left: auto;
+    /* border: 1px solid lightcoral; */
 }
 
 .flex-horizontal {
-    justify-content: center;
     display: flex;
+    justify-content: center;
     flex-wrap: wrap;
     flex-direction: row;
+    width: 100%;
+    /* border: 1px solid lightseagreen; */
 }
 
 #inputString {
@@ -33,7 +39,7 @@ hr {
     font-family: 'Fira Sans', sans-serif;
     resize: vertical;
     width: 40vw;
-    height: 15vh;
+    height: 10vh;
     max-height: 40vh;
     padding: 1%;
     transition: border 0.2s ease;
@@ -46,11 +52,14 @@ hr {
     border: 3px solid rgb(170, 31, 37);
 }
 
+#resultContainer {
+    width: 34vw;
+}
+
 .result {
     font-size: 20px;
     font-family: 'Fira Sans', sans-serif;
     color: grey;
-    margin-top: 1%;
     cursor: pointer;
     transition: 0.05s ease;
 }
@@ -66,12 +75,13 @@ hr {
 .cross {
     margin-top: 1.25%;
     margin-left: 1%;
-    width: 2.5%;
-    height: 2.5%;
+    width: 5%;
+    height: auto;
     cursor: pointer;
     visibility: hidden;
     opacity: 0.6;
     transition: 0.05s ease;
+    align-self: start;
 }
 
 .cross:hover {
@@ -132,22 +142,22 @@ div.selectpopup.popupitems {
 }
 
 #listbutton {
-    position: absolute;
-    left: 2em;
-    bottom: 2em;
+    margin-top: 1vh;    
+    margin-left: 1vh;    
+    width: 12.5%;
+    height: 11vh;
 }
 
 .listContainer {
-    font-size: 20px;
+    font-size: 18px;
     background-color: rgba(255, 255, 255, 0.4);
-    position: absolute;
     display: none;
-    border: 2px solid rgb(170, 31, 37);
-    left: 1.5em;
-    bottom: 5em;
-    width: 40vw;
+    border: 1px solid rgb(170, 31, 37);
+    width: 102%;
+    min-height: 11vh;
     max-height: 50vh;
-    min-height: 20vh;
+    margin-top: 1vh;  
+    margin-left: -1.1%;  
     overflow-y: scroll;
 }
 
