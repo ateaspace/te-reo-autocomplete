@@ -135,19 +135,12 @@ $(document).ready(function(){
     $("#cross2").click(function(){ crossClicked("crs2") });
 
     $("#inputString").on('mouseup', function(e) {
-        var inputElement = document.getElementById("inputString");
-
-        var entireSelection = document.getSelection(),
-            range = entireSelection.getRangeAt(0),
-            clientRects = range.getClientRects();
-        // console.log(clientRects);
-
-        // console.log("clientRects left: " + clientRects[0].left);
-        // console.log("clientRects top: " + clientRects[0].top);
+        var inputElement = document.getElementById("inputString");            
 
         var selectionStart = inputElement.selectionStart;
         var selectionEnd = inputElement.selectionEnd;
         selection = inputElement.value.substring(selectionStart, selectionEnd);
+
         if (selection.length > 0 && selection.trim() != "") {
             console.log("selection: " + selection);
             $("div.selectpopup").css({
@@ -174,12 +167,17 @@ $(document).ready(function(){
 
     $("#listbutton").click(function(){
         var button = document.getElementById("listbutton");
-        if (button.textContent == "Show Lists") {
-            $(".listContainer").fadeIn(150);
-            button.textContent = "Hide Lists";
+        var cogimage = document.getElementById("cog");
+        if ($(".listContainer").css("max-height") == "0px") {
+            $(".listContainer").css("max-height", "50vh");
+            $(".listContainer").css("border", "1px solid rgb(170, 31, 37)");
+            $("#cog").css("transform", "rotate(-90deg)");
+            // button.textContent = "Hide Lists";
         } else {
-            $(".listContainer").fadeOut(150);
-            button.textContent = "Show Lists";
+            $(".listContainer").css("max-height", "0vh");
+            $(".listContainer").css("border", "none");
+            $("#cog").css("transform", "rotate(0deg)");
+            // button.textContent = "Show Lists";
         }
     });
 
@@ -200,13 +198,13 @@ $(document).ready(function(){
         customListDiv.innerHTML = "";
 
         for (idx in positivePhrases) {
-            positiveListDiv.innerHTML += "<div class=\"listPhrase\" id=\"plist" + idx + "\">" + positivePhrases[idx] + "</div>";
+            positiveListDiv.innerHTML += "<div class=\"listPhrase\" id=\"plist" + idx + "\" title=\"Click to remove suggestion from list\">" + positivePhrases[idx] + "</div>";
         }
         for (idx in negativePhrases) {
-            negativeListDiv.innerHTML += "<div class=\"listPhrase\" id=\"nlist" + idx + "\">" + negativePhrases[idx] + "</div>";
+            negativeListDiv.innerHTML += "<div class=\"listPhrase\" id=\"nlist" + idx + "\" title=\"Click to remove suggestion from list\">" + negativePhrases[idx] + "</div>";
         }
         for (idx in customPhrases) {
-            customListDiv.innerHTML += "<div class=\"listPhrase\" id=\"clist" + idx + "\">" + customPhrases[idx] + "</div>";
+            customListDiv.innerHTML += "<div class=\"listPhrase\" id=\"clist" + idx + "\" title=\"Click to remove suggestion from list\">" + customPhrases[idx] + "</div>";
         }
     }
 
