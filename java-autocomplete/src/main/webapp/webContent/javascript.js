@@ -67,8 +67,8 @@ $(document).ready(function(){
                     } else if (state == "ft" || state == "pt") { // if suggestions exist
                         if (positivePhrases.length > 0) {
                             var changeMade = false;
-                            for (i in sugs) {
-                                for (j in positivePhrases) {
+                            for (var i = 0; i < sugs.length; i++) {
+                                for (var j = 0; j < positivePhrases.length; j++) {
                                     if (sugs[i] == positivePhrases[j]) {
                                         var tmp = sugs[0]; // save top
                                         sugs[0] = sugs[i]; // set top to match
@@ -81,12 +81,11 @@ $(document).ready(function(){
                             if (!changeMade) setResults(sugs[0], sugs[1], sugs[2], state);
                         } 
                         if (negativePhrases.length > 0) {
-                            var changeMade = false;
-                            for (i in sugs) {
-                                for (j in negativePhrases) {
+                            for (var i = 0; i < sugs.length; i++) {
+                                for (var j = 0; j < negativePhrases.length; j++) {
                                     if (sugs[i] == negativePhrases[j]) {
-                                        sugs.splice(i, 1);
-                                        changeMade = true;
+                                        sugs.splice(i, 1); // remove from suggestion
+                                        i--; // array is re-indexed on splice - move back one in array
                                     }
                                 }
                             }
@@ -97,7 +96,7 @@ $(document).ready(function(){
                     }
                     if (customPhrases.length > 0) {
                         var changeMade = false;
-                        for (j in customPhrases) {
+                        for (var j = 0; j < customPhrases.length; j++) {
                             if (sanitize(customPhrases[j]).startsWith(sanitize(currSentence))) {
                                 // if (levenshtein(sanitize(customPhrases[j]), sanitize(currSentence)) < 5) {};
                                 if ((sanitize(customPhrases[j]).length / 2) < sanitize(currSentence).length) {
@@ -166,8 +165,6 @@ $(document).ready(function(){
     $("#popupcross").click(function(){ popupClicked("cross") });
 
     $("#listbutton").click(function(){
-        var button = document.getElementById("listbutton");
-        var cogimage = document.getElementById("cog");
         if ($(".listContainer").css("max-height") == "0px") {
             $(".listContainer").css("max-height", "50vh");
             $(".listContainer").css("border", "1px solid rgb(170, 31, 37)");
@@ -197,13 +194,13 @@ $(document).ready(function(){
         negativeListDiv.innerHTML = "";
         customListDiv.innerHTML = "";
 
-        for (idx in positivePhrases) {
+        for (var idx = 0; idx < positivePhrases.length; idx++) {
             positiveListDiv.innerHTML += "<div class=\"listPhrase\" id=\"plist" + idx + "\" title=\"Click to remove suggestion from list\">" + positivePhrases[idx] + "</div>";
         }
-        for (idx in negativePhrases) {
+        for (var idx = 0; idx < negativePhrases.length; idx++) {
             negativeListDiv.innerHTML += "<div class=\"listPhrase\" id=\"nlist" + idx + "\" title=\"Click to remove suggestion from list\">" + negativePhrases[idx] + "</div>";
         }
-        for (idx in customPhrases) {
+        for (var idx = 0; idx < customPhrases.length; idx++) {
             customListDiv.innerHTML += "<div class=\"listPhrase\" id=\"clist" + idx + "\" title=\"Click to remove suggestion from list\">" + customPhrases[idx] + "</div>";
         }
     }
