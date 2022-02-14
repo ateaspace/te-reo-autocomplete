@@ -10,7 +10,7 @@ import packages.prt.TextSanitized;
 
 public class PlainText extends PATServlet {
 
-    private final int LINE_LENGTH_THRESHOLD = 250;
+    private final int LINE_LENGTH_THRESHOLD = 750;
     private SentenceDetectorME detector = new SentenceDetectorME(sentenceModel);  
 
     public PlainText(File file) {
@@ -27,7 +27,6 @@ public class PlainText extends PATServlet {
                 String row;
                 // String[] splitMsg;
                 int lineCount = 0;
-                // int trueLineCount = 0;
                 int wordThreshold = 100;
                 int charThreshold = 500;
                 int wordCount = 0;
@@ -62,29 +61,6 @@ public class PlainText extends PATServlet {
                         }
                     }
                 }
-
-                // while ((row = inputReader.readLine()) != null) {
-                //     row = row.trim();
-                //     if (!row.equals("") && !row.isEmpty()) {
-                //         if (row.length() < LINE_LENGTH_THRESHOLD) { // if row contains less than x chars, split with OpenNLP, otherwise regex split
-                //             splitMsg = detector.sentDetect(row);
-                //         } else {
-                //             splitMsg = row.split(MPTR_SPLIT);
-                //         }
-                        
-                //         for (String sentence : splitMsg) {
-                //             if (!sentence.equals("") && !sentence.isEmpty()) { // prune empty and large phrases
-                //                 //System.out.println(sentence);
-                //                 addTermByChunks(processSentence(sentence), 1);
-                //             } 
-                //         }
-                //         lineCount++;
-                //         if (lineCount % 1000 == 0) {
-                //             System.out.println("processing line: " + trueLineCount + " line length: " + row.length());
-                //         }
-                //     }
-                //     trueLineCount++;
-                // }
                 inputReader.close();
                 System.out.println(String.format("%,d", (int)currPRT.termCount) + " phrases written from " + file);
                 long stopTime = System.currentTimeMillis();
@@ -96,28 +72,11 @@ public class PlainText extends PATServlet {
             }
 
             try {
-                BufferedReader inputReader;
-                inputReader = new BufferedReader(new FileReader(file, StandardCharsets.UTF_8));
+                BufferedReader inputReader = new BufferedReader(new FileReader(file, StandardCharsets.UTF_8));
                 String row;
-
                 while ((row = inputReader.readLine()) != null) {
                     // tokenizer to maintain word position within sentence
-                    StringTokenizer itr = new StringTokenizer(row.toLowerCase().trim().replace("\"", ""));
-                    if (itr.countTokens() > 1) {
-                        String s1 = "";
-                        String s2 = "";
-                        while (itr.hasMoreTokens())
-                        {
-                            if (s1.isEmpty())
-                                s1 = itr.nextToken();
-                            s2 = itr.nextToken();
-                            String termOriginal = s1 + " " + s2;
-                            TextSanitized term = new TextSanitized(termOriginal);
-                            currBigramPRT.addTerm(term, 1); // add words to PRT and increment count
-                            s1 = s2;
-                            s2 = "";
-                        }
-                    }
+                    writeBigrams(row);
                 }
                 inputReader.close();
             } catch (IOException e) {
@@ -128,16 +87,32 @@ public class PlainText extends PATServlet {
     }
 
     public void splitAndProcessChunk(String chunk) {
-        String[] splitMsg;
-        if (chunk.length() < LINE_LENGTH_THRESHOLD) { // if row contains less than x chars, split with OpenNLP, otherwise regex split
-            splitMsg = detector.sentDetect(chunk);
-        } else {
-            splitMsg = chunk.split(MPTR_SPLIT);
+        try {
+            if (chunk.length() < LINE_LENGTH_THRESHOLD) { // if chunk is less than threshold, add terms
+                addTerms(detector.sentDetect(chunk));
+            } else { // otherwise split in half and recurse
+                if (chunk.length() > 5000) System.out.println("larger chunk detected of size: " + chunk.length());
+                int splitIndex = chunk.indexOf(".", chunk.length() / 2);
+                if (splitIndex == -1) addTerms(detector.sentDetect(chunk)); // full stop doesn't exist
+                else {
+                    String prefix = chunk.substring(0, splitIndex);
+                    String suffix = chunk.substring(splitIndex);
+                    // System.out.println("prefix: " + prefix);
+                    // System.out.println("splitIndex: " + splitIndex);
+                    // addTerms(detector.sentDetect(prefix));
+                    splitAndProcessChunk(prefix);
+                    splitAndProcessChunk(suffix);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-                    
-        for (String sentence : splitMsg) {
+    }
+
+    private void addTerms(String[] splitmsg) {
+        for (String sentence : splitmsg) {
             if (!sentence.equals("") && !sentence.isEmpty()) {
-                addTermByChunks(processSentence(sentence), 1);
+                addTermByChunks(processSentence(sentence));
             }
         }
     }
