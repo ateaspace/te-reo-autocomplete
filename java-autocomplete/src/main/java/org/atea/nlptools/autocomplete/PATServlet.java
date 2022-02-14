@@ -396,6 +396,10 @@ public class PATServlet extends HttpServlet {
         }
     }
 
+    public void addTermByChunks(String input) {
+        addTermByChunks(input, 1);
+    }
+
     // returns normalized value (0..1) when given min and max
     public double getNormalized(double val, int min, int max) { 
         return (val - min) / (max - min);
@@ -409,6 +413,7 @@ public class PATServlet extends HttpServlet {
             // val = val.replaceAll("(From:).*(Subject:)", "");
             // val = val.replaceAll("(\\*From:\\*).*(\\*To:\\*)", "");
             // val = val.replaceAll("\\-{8,12}\\s(Forwarded).*(Subject:)",""); // remove ----- Forwarded Message ----- etc.
+            if (val.charAt(0) == '.') val = val.substring(1); 
             val = val.replaceAll("https?:\\/\\/(www\\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)", ""); // remove URLs https://stackoverflow.com/questions/3809401/what-is-a-good-regular-expression-to-match-a-url
             val = val.replaceAll("(www)\\..{0,100}(\\.nz)|(\\.com)",""); // remove URLs not caught by above expression
             val = val.replaceAll("[\\d|-|(|)]{5,14}",""); // remove phone numbers
