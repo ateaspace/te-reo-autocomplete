@@ -54,7 +54,7 @@ public class PATServlet extends HttpServlet {
 
     final int YEAR_MIN = 2008; // oldest message post year
     final int YEAR_MAX = LocalDate.now().getYear(); // today's year
-    final int TOPK = 3; // number of top phrases the ranking system should extract
+    
     final int BIGRAM_WEIGHT = 10; // weight of bigram ranking value
     final int MAX_WORDS_IN_SUGGESTION = 15; // maximum number of words in suggestion
     final int SNIPPET_SIZE = 100; // number of lines for language detection
@@ -64,7 +64,7 @@ public class PATServlet extends HttpServlet {
     final String BIGRAM_SPLIT = ",|\\.|!|\\?"; // regex values to split sentences
 
     static PATServlet inputCorpus;
-    static int exitCode;
+    static int TOPK = 3; // number of top phrases the ranking system should extract
     static PruningRadixTrie currPRT = new PruningRadixTrie();
     static PruningRadixTrie currBigramPRT = new PruningRadixTrie();
     static String currTextExport;
@@ -165,6 +165,7 @@ public class PATServlet extends HttpServlet {
         }
 
         String inputStringParameter = request.getParameter("inputString");
+        String topkParameter = request.getParameter("topk");
         String updateParameter = request.getParameter("update");
 
         if (updateParameter != null) {
@@ -189,7 +190,12 @@ public class PATServlet extends HttpServlet {
             writer.endArray();
             writer.endObject();
             writer.flush();
-        } else if (inputStringParameter != null) {
+        } else if (inputStringParameter != null && topkParameter != null) {
+            try {
+                TOPK = Integer.parseInt(topkParameter);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             String[] outputStrings = process(inputStringParameter);
 
             writer.beginObject();
@@ -298,7 +304,7 @@ public class PATServlet extends HttpServlet {
                     maxFreq = (int)results_Bigram.get(0).getTermFrequencyCount();
                     minFreq = (int)results_Bigram.get(results_Bigram.size()-1).getTermFrequencyCount();
                 } else {
-                    System.out.println("No bigram results");
+                    // System.out.println("No bigram results");
                 }
                 Map<String, Double> normalized_Bigrams = new HashMap<String, Double>();
                 for (TermAndFrequency result : results_Bigram) { // normalize bigram ranking values based on min and max
@@ -370,6 +376,8 @@ public class PATServlet extends HttpServlet {
                     triggerSuggestion = false;
                 }
                 return adjusted_topk_out.toArray(new String[adjusted_topk_out.size()]);
+            } else {
+                System.err.println("No results");
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -475,7 +483,7 @@ public class PATServlet extends HttpServlet {
             }
         } else {
             printError("Given language is not supported. Please enter either 'mi' for Maori or 'en' for English.");
-            System.exit(exitCode);
+            System.exit(0);
         }
     }
 

@@ -17,17 +17,7 @@
                         <div class="listColumn" id="negativeList">Negative Phrases<hr><p></p></div>
                         <div class="listColumn" id="customList">Custom Phrases<hr><p></p></div>
                     </div>
-                    <div class="flex-horizontal">
-                        <div class="result" id="divResult0" title="Click to see this suggestion more">no suggestion</div>
-                        <img src="images/cross.png" class="cross" id="cross0" title="Click to remove this suggestion from results">
-                    </div>
-                    <div class="flex-horizontal">
-                        <div class="result" id="divResult1" title="Click to see this suggestion more"></div>
-                        <img src="images/cross.png" class="cross" id="cross1" title="Click to remove this suggestion from results">
-                    </div>
-                    <div class="flex-horizontal">
-                        <div class="result" id="divResult2" title="Click to see this suggestion more"></div>
-                        <img src="images/cross.png" class="cross" id="cross2" title="Click to remove this suggestion from results">
+                    <div id="suggestions">
                     </div>
                 </div>
                 <button type="button" class="btn btn-outline-success" id="listbutton" title="Click to view preferences"><img src="images/cog.png" id="cog"></button>
@@ -39,6 +29,11 @@
                 <!-- <img src="images/cross.png" class="popupcross" id="popupcross" title="Remove custom suggestion"> -->
             </div>
         </div>
+        <select id="dropdownTopK">
+            <option value="1">1</option>
+            <option value="3" selected="selected">3</option>
+            <option value="5">5</option>
+          </select>
 
         <script type="text/javascript" src="javascript.js"></script>
         

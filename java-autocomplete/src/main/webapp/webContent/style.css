@@ -39,7 +39,7 @@ hr {
     font-family: 'Fira Sans', sans-serif;
     resize: vertical;
     width: 40vw;
-    height: 15vh;
+    min-height: 10vh;
     max-height: 40vh;
     padding: 1%;
     transition: border 0.2s ease;
@@ -73,7 +73,7 @@ hr {
 }
 
 .cross {
-    margin-top: 1.25%;
+    margin-top: 0.75%;
     margin-left: 1%;
     width: 5%;
     height: auto;
@@ -204,4 +204,17 @@ div.selectpopup.popupitems {
     height: auto;
     
     transition: transform 0.5s ease;
+}
+
+#dropdownTopK {
+    position: absolute;
+    font-size: 20px;
+    top: 2em;
+    left: 2em;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    border: 1px solid grey;
+    padding: 0.5em 1em 0.5em 0.5em;
+    background: url(https://cdn-icons-png.flaticon.com/512/60/60995.png) 80% / 20% no-repeat #eee;
 }
