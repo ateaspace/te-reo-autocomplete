@@ -15,7 +15,7 @@ hr {
 }
 
 .flex-vertical {
-    align-items: center;
+    align-items: right;
     display: flex;
     flex-wrap: wrap;
     flex-direction: column;
@@ -151,6 +151,19 @@ div.selectpopup.popupitems {
     border-radius: 0;
 }
 
+#dropdownTopK {
+    position: absolute;
+    top: 1em;
+    left: 1em;
+    /* margin-top: 1vh;
+    margin-left: auto;  */
+    width: 3em;
+    height: 3em;
+    padding: 0;
+    border: 1px solid grey;
+    border-radius: 0;
+}
+
 .listContainer {
     font-size: 18px;
     background-color: rgba(255, 255, 255, 0.4);
@@ -202,19 +215,5 @@ div.selectpopup.popupitems {
 #cog {
     width: 100%;
     height: auto;
-    
     transition: transform 0.5s ease;
-}
-
-#dropdownTopK {
-    position: absolute;
-    font-size: 20px;
-    top: 2em;
-    left: 2em;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    border: 1px solid grey;
-    padding: 0.5em 1em 0.5em 0.5em;
-    background: url(https://cdn-icons-png.flaticon.com/512/60/60995.png) 80% / 20% no-repeat #eee;
 }

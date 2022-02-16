@@ -203,11 +203,13 @@ $(document).ready(function(){
             $(".listContainer").css("max-height", "40vh");
             $(".listContainer").css("border", "1px solid rgb(170, 31, 37)");
             $("#cog").css("transform", "rotate(-90deg)");
+            $("#dropdownTopK").css("visibility", "visible");
             // button.textContent = "Hide Lists";
         } else {
             $(".listContainer").css("max-height", "0vh");
             $(".listContainer").css("border", "none");
             $("#cog").css("transform", "rotate(0deg)");
+            $("#dropdownTopK").css("visibility", "hidden");
             // button.textContent = "Show Lists";
         }
     });
