@@ -21,30 +21,25 @@ public class Tweet extends PATServlet {
                 BufferedReader inputReader = new BufferedReader(new FileReader(file, StandardCharsets.UTF_8)); // create reader interface with UTF-8 encoding for macron support
                 String row;
                 DateTimeFormatter dateFormat = DateTimeFormatter.ofPattern("d/MM/yyyy");
-                // int lineCount = 0;
     
                 long startTime = System.currentTimeMillis();
                 while ((row = inputReader.readLine()) != null) {
-                    // lineCount++;
-                    // System.out.println(lineCount);
                     String[] dateSplit = row.split("\t"); // phrase / date delimiter
                     String date = dateSplit[0];
                     String msg = dateSplit[1];
                     int msgYear;
-                    double timeRank;
                     if (date.charAt(0) <= '9') { // remove leading 0s of date to match dateFormat
                         msgYear = LocalDate.parse(date, dateFormat).getYear();
                     } else {
                         msgYear = LocalDate.parse(date.substring(1), dateFormat).getYear();
                     }
-                    timeRank = 1 + TR_WEIGHT * getNormalized(msgYear, YEAR_MIN, YEAR_MAX);
+                    double timeRank = 1 + TR_WEIGHT * getNormalized(msgYear, YEAR_MIN, YEAR_MAX);
 
                     //String[] splitMsg = msg.split(MPTR_SPLIT);
                     String[] splitMsg = detector.sentDetect(msg);
                     for (String sentence : splitMsg) {
                         for (String subSentence : sentence.split("((?<=[!?]))")) {
                             if (!subSentence.equals("") && !subSentence.isEmpty()) { // prune empty and large phrases
-                                //System.out.println(subSentence);
                                 addTermByChunks(processSentence(subSentence), round(timeRank, 4));
                             } 
                         }
@@ -79,7 +74,6 @@ public class Tweet extends PATServlet {
                 }
                 inputReader.close();
                 System.out.println(String.format("%,d", (int)currBigramPRT.termCount) + " bigram terms written from " + file);
-
                 writeSerialized();
             }
             catch (Exception e) {
