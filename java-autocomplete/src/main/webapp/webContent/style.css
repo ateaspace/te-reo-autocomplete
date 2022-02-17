@@ -7,8 +7,8 @@ html, body {
 hr {
     margin-top: 0.2em !important;
     margin-bottom: 0.2em !important;
-    width: 85%;
-    margin-left: 0;
+    /* width: 85%;
+    margin-left: 0; */
 }
 
 #divMain {
@@ -166,7 +166,7 @@ div.selectpopup.popupitems {
     border-radius: 0;
 }
 
-.listContainer {
+.preferencePanel {
     font-size: 18px;
     background-color: none;
     border: none;
@@ -175,12 +175,18 @@ div.selectpopup.popupitems {
     max-height: 0vh;
     margin-top: 1vh;  
     overflow-y: scroll;
+    scrollbar-width: none;
 }
 
-.listContainer br {
+.preferencePanel br {
     display: block; 
     content: ""; 
-    margin-top: 0.75%; 
+    margin-top: 0.85%; 
+}
+
+#listContainer {
+    max-height: 30vh;
+    overflow-y: scroll;
 }
 
 .listColumn {

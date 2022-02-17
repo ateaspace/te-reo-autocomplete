@@ -15,6 +15,7 @@ $(document).ready(function(){
     var customPhrases;
     var lastTopSuggestion;
     var inputElement = document.getElementById("inputString");
+    inputElement.focus();
 
     updateLists();
     onTopKChange(maxSuggestions);
@@ -168,8 +169,8 @@ $(document).ready(function(){
                     if (sanitize(customPhrases[j]).startsWith(sanitize(currentSentence))) {
                         // if (levenshtein(sanitize(customPhrases[j]), sanitize(currentSentence)) < 5) {};
                         if ((sanitize(customPhrases[j]).length / 2) < sanitize(currentSentence).length) {
-                            console.log("half of custPhrase length: " + sanitize(customPhrases[j]).length / 2);
-                            console.log("curr length: " + sanitize(currentSentence).length);
+                            // console.log("half of custPhrase length: " + sanitize(customPhrases[j]).length / 2);
+                            // console.log("curr length: " + sanitize(currentSentence).length);
                             sugs.unshift(customPhrases[j]);
                             sugs = sugs.slice(0, 3);
                             setResults(sugs, "pt");
@@ -185,10 +186,6 @@ $(document).ready(function(){
 
     function sanitize(str) {
         return str.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
-    }
-
-    function sanitizeDiacriticsOnly(str) {
-        return str.normalize("NFD").replace(/\p{Diacritic}/gu, "");
     }
 
     $("#inputString").on('mouseup', function(e) {
@@ -217,15 +214,15 @@ $(document).ready(function(){
 
 
     $("#listbutton").click(function(){
-        if ($(".listContainer").css("max-height") == "0px") {
-            $(".listContainer").css("max-height", "40vh");
-            $(".listContainer").css("border", "1px solid rgb(170, 31, 37)");
+        if ($(".preferencePanel").css("max-height") == "0px") {
+            $(".preferencePanel").css("max-height", "40vh");
+            $(".preferencePanel").css("border", "1px solid rgb(170, 31, 37)");
             $("#cog").css("transform", "rotate(-90deg)");
             // $("#dropdownTopK").css("visibility", "visible");
             // button.textContent = "Hide Lists";
         } else {
-            $(".listContainer").css("max-height", "0vh");
-            $(".listContainer").css("border", "none");
+            $(".preferencePanel").css("max-height", "0vh");
+            $(".preferencePanel").css("border", "none");
             $("#cog").css("transform", "rotate(0deg)");
             // $("#dropdownTopK").css("visibility", "hidden");
             // button.textContent = "Show Lists";
@@ -418,7 +415,12 @@ $(document).ready(function(){
         if (sgs[0]) lastTopSuggestion = sgs[0];
         if (st == "pt") $("#divResult0").css({'color':'black'}); 
         else $("#divResult0").css({'color':'grey'}); 
-        for (var i = 0; i < maxSuggestions; i++) $("#divResult" + i).text(sgs[i]);
+        for (var i = 0; i < maxSuggestions; i++) {
+            if (sgs[i]) {
+                var lastSevenWords = sgs[i].split(" ").slice(-7).join(" "); // limits result output to seven words - this could be improved by lining up the first word with other suggestions'
+                $("#divResult" + i).text(lastSevenWords);
+            }
+        }
         renderCrossImages();
     }
 

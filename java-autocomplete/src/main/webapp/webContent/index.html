@@ -11,7 +11,7 @@
         <div class="flex-vertical" id="divMain">
             <textarea id="inputString" name="inputString" autocomplete="off" spellcheck="false" maxlength="5000" placeholder="Begin typing..." autofocus></textarea>
             <button type="button" id="listbutton" title="Click to view preferences"><img src="images/cog.png" id="cog"></button>
-            <div class="listContainer">
+            <div class="preferencePanel">
                 <div id="options">
                     <label for="topk">Number of Suggestions: </label>
                     <select id="dropdownTopK" name="topk">
@@ -20,9 +20,11 @@
                         <option value="5">5</option>
                     </select>
                 </div><br>
-                <div class="listColumn" id="positiveList">Positive Phrases<hr><p></p></div>
-                <div class="listColumn" id="negativeList">Negative Phrases<hr><p></p></div>
-                <div class="listColumn" id="customList">Custom Phrases<hr><p></p></div>
+                <div id="listContainer">
+                    <div class="listColumn" id="positiveList">Positive Phrases<hr><p></p></div>
+                    <div class="listColumn" id="negativeList">Negative Phrases<hr><p></p></div>
+                    <div class="listColumn" id="customList">Custom Phrases<hr><p></p></div>
+                </div>
             </div>
             <div id="suggestions"></div>
         </div>
