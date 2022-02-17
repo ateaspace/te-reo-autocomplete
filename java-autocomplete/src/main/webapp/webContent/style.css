@@ -6,9 +6,9 @@ html, body {
 
 hr {
     margin-top: 0.2em !important;
-    margin-bottom: 0.2em !important;
-    /* width: 85%;
-    margin-left: 0; */
+    margin-bottom: 0 !important;
+    width: 85%;
+    margin-left: 0;
 }
 
 #divMain {
@@ -63,16 +63,18 @@ hr {
 
 .result:hover {
     color: black !important; /* potentially bad practice? */
+    text-decoration: underline;
 }
 
 .result:active {
     color: darkgreen !important; /* potentially bad practice? */
+    text-decoration: underline;
 }
 
-.cross {
-    margin-top: 0.75%;
+.cross, .tick {
+    margin-top: 0.25%;
     margin-right: 1%;
-    width: 5%;
+    width: 1.75em;
     height: auto;
     cursor: pointer;
     visibility: hidden;
@@ -81,32 +83,11 @@ hr {
     align-self: start;
 }
 
-.cross:hover {
+.cross:hover, .tick:hover {
     opacity: 1;
 }
 
-.cross:active {
-    opacity: 1;
-    filter: brightness(0.8);
-}
-
-.tick {
-    margin-top: 0.75%;
-    margin-right: 1%;
-    width: 5%;
-    height: auto;
-    cursor: pointer;
-    visibility: hidden;
-    opacity: 0.6;
-    transition: 0.05s ease;
-    align-self: start;
-}
-
-.tick:hover {
-    opacity: 1;
-}
-
-.tick:active {
+.cross:active, .tick:active {
     opacity: 1;
     filter: brightness(0.8);
 }
@@ -145,10 +126,10 @@ div.selectpopup.popupitems {
 #listbutton {
     margin-top: 1vh;
     margin-left: auto;    
-    margin-bottom: calc(-3vw - 1vh);
-    width: 3vw;
-    height: 3vw;
-    padding: 0;
+    margin-bottom: calc(-3em - 1vh);
+    width: 3em;
+    height: 3em;
+    padding: 0.1em;
     border: none;
     border-radius: 0;
     background: none;
@@ -166,6 +147,10 @@ div.selectpopup.popupitems {
     border-radius: 0;
 }
 
+#dropdownTopK:hover {
+    cursor: pointer;
+}
+
 .preferencePanel {
     font-size: 18px;
     background-color: none;
@@ -176,6 +161,7 @@ div.selectpopup.popupitems {
     margin-top: 1vh;  
     overflow-y: scroll;
     scrollbar-width: none;
+    margin-bottom: 1.5vh;
 }
 
 .preferencePanel br {
@@ -185,7 +171,7 @@ div.selectpopup.popupitems {
 }
 
 #listContainer {
-    max-height: 30vh;
+    max-height: 25vh;
     overflow-y: scroll;
 }
 
@@ -193,6 +179,7 @@ div.selectpopup.popupitems {
     color: rgb(24, 24, 24);
     width: 33.3333%;
     padding: 0.5em;
+    padding-top: 0;
 }
 
 .listColumn p {
@@ -211,6 +198,18 @@ div.selectpopup.popupitems {
 }
 
 #customList {
+    float: right;
+}
+
+#positiveListHeader {
+    float: left;
+}
+
+#negativeListHeader {
+    display: inline-block;
+}
+
+#customListHeader {
     float: right;
 }
 
@@ -262,3 +261,4 @@ div.selectpopup.popupitems {
     margin-top: 1.2%;
     opacity: 1;
 }
+

@@ -71,7 +71,7 @@ $(document).ready(function(){
         var beforeCursor = input.substring(0, cursorLoc); // all text before cursor location
         var currSentence = beforeCursor.split(/[.?!]\s|[\\\n\r\t]/).pop(); // all text between cursor location and last end-of-sentence character
         removedWords = "";
-
+        var spaceAdded = false;
         // console.log(e.which);
         if (e.which == KEY_TAB || suggClicked) { // insert selection
             // console.log("state: " + state);
@@ -82,26 +82,38 @@ $(document).ready(function(){
                 } else {
                     currSuggestion = sugs[0];
                 }
+                if (!currSuggestion.endsWith(".") && !currSuggestion.endsWith("!") && !currSuggestion.endsWith("?")) {
+                    spaceAdded = true;
+                }
+
                 var newCursorLoc = cursorLoc + (currSuggestion.length - currSentence.length); // calculate new cursor position
 
-                inputElement.setSelectionRange(cursorLoc-currSentence.length, cursorLoc); // select currSentence
+                // inputElement.setSelectionRange(cursorLoc-currSentence.length, cursorLoc); // select currSentence
                 var beforeCurrSentence = input.slice(0, cursorLoc-currSentence.length); // get all text before currSentence
                 var afterCurrSentence = input.slice(cursorLoc); // get all text after currSentence
                 var newOut = beforeCurrSentence + currSuggestion + afterCurrSentence; // replace currSentence with suggestion
 
                 $("#inputString").val(newOut); // push suggestion to text box
                 inputElement.setSelectionRange(newCursorLoc, newCursorLoc); // set new cursor position
-                state = "ns";
-                setResult("no suggestion");
+
+                // state = "ns";
+                // setResult("no suggestion");
             }
-        } else { // update suggestions
-            if (currSentence.length < 2 || currSentence.trim().length == 0) { // prune single and empty character inputs 
-                setResult("no suggestion");
-            } else if (lastSent != currSentence) { // prevent duplicate requests
-                suggCount = 0;
-                sugs = [];
-                getSuggestions(currSentence, "", 0);
-            }
+        }  // update suggestions
+        
+        var cursorLoc = inputElement.selectionStart;
+        var input = $("#inputString").val();
+        var beforeCursor = input.substring(0, cursorLoc);
+        var currSentence = beforeCursor.split(/[.?!]\s|[\\\n\r\t]/).pop();
+
+        if (spaceAdded) currSentence = currSentence + " "; // if not end of sentence, append space to trigger new suggestions
+
+        if (currSentence.length < 2 || currSentence.trim().length == 0) { // prune single and empty character inputs 
+            setResult("no suggestion");
+        } else if (lastSent != currSentence) { // prevent duplicate requests
+            suggCount = 0;
+            sugs = [];
+            getSuggestions(currSentence, "", 0);
         }
     }
 
@@ -120,19 +132,23 @@ $(document).ready(function(){
             setResults(sugs, state);
 
             if (state == "ns" || suggCount < maxSuggestions) {
-                if (sanitize(currentSentence) == sanitize(lastTopSuggestion)) { // if input matches 
-                    sugs.length = 0;
-                    sugs.push(lastTopSuggestion);
-                    setResults(sugs, "pt");
-                } else {
-                    if (currentSentence.split(" ").length > 1) {
-                        var newSentence = currentSentence.substring(currentSentence.indexOf(" ") + 1);
-                        removedWords += currentSentence.split(" ")[0] + " ";
-                        getSuggestions(newSentence, removedWords, suggCount);
+                if (currentSentence) {
+                    if (sanitize(currentSentence) == sanitize(lastTopSuggestion)) { // if input matches 
+                        sugs.length = 0;
+                        sugs.push(lastTopSuggestion);
+                        setResults(sugs, "pt");
                     } else {
-                        setResult("no suggestion");
-                    }
-                }                
+                        if (currentSentence.split(" ").length > 1) {
+                            var newSentence = currentSentence.substring(currentSentence.indexOf(" ") + 1);
+                            removedWords += currentSentence.split(" ")[0] + " ";
+                            getSuggestions(newSentence, removedWords, suggCount);
+                        } else {
+                            setResult("no suggestion");
+                        }
+                    }                
+                } else {
+                    setResult("no suggestion");
+                }
             } else if (state == "ft" || state == "pt") { // if suggestions exist
                 if (positivePhrases.length > 0) {
                     var changeMade = false;
@@ -164,7 +180,6 @@ $(document).ready(function(){
                 console.log("given state does not exist: " + state);
             }
             if (customPhrases.length > 0) {
-                var changeMade = false;
                 for (var j = 0; j < customPhrases.length; j++) {
                     if (sanitize(customPhrases[j]).startsWith(sanitize(currentSentence))) {
                         // if (levenshtein(sanitize(customPhrases[j]), sanitize(currentSentence)) < 5) {};
@@ -174,11 +189,9 @@ $(document).ready(function(){
                             sugs.unshift(customPhrases[j]);
                             sugs = sugs.slice(0, 3);
                             setResults(sugs, "pt");
-                            changeMade = true;
                         }
                     }
                 }
-                if (!changeMade) setResults(sugs, state);
             }   
             lastSent = currentSentence;
         }}); 
@@ -343,7 +356,6 @@ $(document).ready(function(){
     }
 
     function crossClicked(cross) {
-        console.log("cross clicked: " + cross);
         var negativeSuggestion;
         var negativeSuggestionIndex;
         for (var i = 0; i < maxSuggestions; i++) {
@@ -380,7 +392,7 @@ $(document).ready(function(){
             newCrossImage.src = "images/cross.png"; 
             newCrossImage.className = "cross";
             newCrossImage.id = "cross" + i;
-            newCrossImage.title = "Click to not see this suggestion";
+            newCrossImage.title = "Click to never see this suggestion";
 
             var newSuggestionDiv = document.createElement("div");
             newSuggestionDiv.className = "result";
@@ -393,6 +405,11 @@ $(document).ready(function(){
             newHorizontalFlexDiv.appendChild(newSuggestionDiv);
         }
         defineOnClickListeners();
+        var cursorLoc = inputElement.selectionStart; // current cursor location
+        var input = $("#inputString").val(); // entire input text
+        var beforeCursor = input.substring(0, cursorLoc); // all text before cursor location
+        var currSentence = beforeCursor.split(/[.?!]\s|[\\\n\r\t]/).pop(); // all text between cursor location and last end-of-sentence character
+        getSuggestions(currSentence, "", 0);
     }
 
     // writes given string to result div
@@ -400,7 +417,7 @@ $(document).ready(function(){
         $("#divResult0").css({"color" : "grey"}); 
         $("#divResult0").text(s); 
         $("#divResult0").prop("title", ""); 
-        $("#divResult0").css({"margin-left" : "-10%"}); 
+        $("#divResult0").css({"margin-left" : "-3.5em"}); 
         for (var i = 1; i < maxSuggestions; i++) {
             $("#divResult" + i).text(""); 
         }
