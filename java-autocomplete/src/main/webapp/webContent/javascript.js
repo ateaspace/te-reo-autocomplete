@@ -13,6 +13,8 @@ $(document).ready(function(){
     var positivePhrases;
     var negativePhrases;
     var customPhrases;
+    var lastTopSuggestion;
+    var inputElement = document.getElementById("inputString");
 
     updateLists();
     onTopKChange(maxSuggestions);
@@ -28,20 +30,32 @@ $(document).ready(function(){
         processOnChange(e, false);
     });
 
-    $("#divResult0").click(function(e){ suggClicked(e, "divResult0") });
-    $("#divResult1").click(function(e){ suggClicked(e, "divResult1") });
-    $("#divResult2").click(function(e){ suggClicked(e, "divResult2") });
-
-    $("#cross0").click(function(){ crossClicked("crs0") });
-    $("#cross1").click(function(){ crossClicked("crs1") });
-    $("#cross2").click(function(){ crossClicked("crs2") });
+    function defineOnClickListeners() {
+        $("#divResult0").click(function(e){ suggClicked(e, "divResult0") });
+        $("#divResult1").click(function(e){ suggClicked(e, "divResult1") });
+        $("#divResult2").click(function(e){ suggClicked(e, "divResult2") });
+        $("#divResult3").click(function(e){ suggClicked(e, "divResult3") });
+        $("#divResult4").click(function(e){ suggClicked(e, "divResult4") });
+    
+        $("#cross0").click(function(){ crossClicked("crs0") });
+        $("#cross1").click(function(){ crossClicked("crs1") });
+        $("#cross2").click(function(){ crossClicked("crs2") });
+        $("#cross3").click(function(){ crossClicked("crs3") });
+        $("#cross4").click(function(){ crossClicked("crs4") });
+    
+        $("#tick0").click(function(){ tickClicked("tck0") });
+        $("#tick1").click(function(){ tickClicked("tck1") });
+        $("#tick2").click(function(){ tickClicked("tck2") });
+        $("#tick3").click(function(){ tickClicked("tck3") });
+        $("#tick4").click(function(){ tickClicked("tck4") });
+    }
+    
 
     $("#inputString").on('mousedown', function(e) {
         $("div.selectpopup").fadeOut(200);
     });
     
     $("#popuptick").click(function(){ popupClicked("tick") });
-    $("#popupcross").click(function(){ popupClicked("cross") });
 
     document.getElementById("dropdownTopK").onchange = function() {
         maxSuggestions = parseInt(document.getElementById("dropdownTopK").value);
@@ -49,7 +63,6 @@ $(document).ready(function(){
     };
 
     function processOnChange(e, suggClicked, suggestion) {
-        var inputElement = document.getElementById("inputString");
         inputElement.focus();
         if (!e) e = window.event;
         var cursorLoc = inputElement.selectionStart; // current cursor location
@@ -103,22 +116,23 @@ $(document).ready(function(){
                 } else sugs.push(result[propName]);
             }
             sugs.length = suggCount;
-            console.log("sugs: " + sugs.toString());
-            console.log("sugs.length: " + sugs.length);
-            console.log("suggCount: " + suggCount);
             setResults(sugs, state);
 
-            if (state == "ns" || suggCount < maxSuggestions) { // no suggestion (this skips over all outputs where there aren't three suggestions -- fix!)
-                console.log("no suggestions");
-                if (currentSentence.split(" ").length > 1) {
-                    var newSentence = currentSentence.substring(currentSentence.indexOf(" ") + 1);
-                    removedWords += currentSentence.split(" ")[0] + " ";
-                    getSuggestions(newSentence, removedWords, suggCount);
+            if (state == "ns" || suggCount < maxSuggestions) {
+                if (sanitize(currentSentence) == sanitize(lastTopSuggestion)) { // if input matches 
+                    sugs.length = 0;
+                    sugs.push(lastTopSuggestion);
+                    setResults(sugs, "pt");
                 } else {
-                    setResult("no suggestion");
-                }
+                    if (currentSentence.split(" ").length > 1) {
+                        var newSentence = currentSentence.substring(currentSentence.indexOf(" ") + 1);
+                        removedWords += currentSentence.split(" ")[0] + " ";
+                        getSuggestions(newSentence, removedWords, suggCount);
+                    } else {
+                        setResult("no suggestion");
+                    }
+                }                
             } else if (state == "ft" || state == "pt") { // if suggestions exist
-                console.log("currentSentence: " + currentSentence);
                 if (positivePhrases.length > 0) {
                     var changeMade = false;
                     for (var i = 0; i < sugs.length; i++) {
@@ -173,6 +187,10 @@ $(document).ready(function(){
         return str.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase();
     }
 
+    function sanitizeDiacriticsOnly(str) {
+        return str.normalize("NFD").replace(/\p{Diacritic}/gu, "");
+    }
+
     $("#inputString").on('mouseup', function(e) {
         var inputElement = document.getElementById("inputString");            
 
@@ -203,13 +221,13 @@ $(document).ready(function(){
             $(".listContainer").css("max-height", "40vh");
             $(".listContainer").css("border", "1px solid rgb(170, 31, 37)");
             $("#cog").css("transform", "rotate(-90deg)");
-            $("#dropdownTopK").css("visibility", "visible");
+            // $("#dropdownTopK").css("visibility", "visible");
             // button.textContent = "Hide Lists";
         } else {
             $(".listContainer").css("max-height", "0vh");
             $(".listContainer").css("border", "none");
             $("#cog").css("transform", "rotate(0deg)");
-            $("#dropdownTopK").css("visibility", "hidden");
+            // $("#dropdownTopK").css("visibility", "hidden");
             // button.textContent = "Show Lists";
         }
     });
@@ -280,25 +298,12 @@ $(document).ready(function(){
         } else {
             console.error("popupClicked() doesn't accept type: " + type);
         }
-        updateLists();
     }
 
     function suggClicked(e, div) {
         var clickedDivText = document.getElementById(div).textContent;
-
-        if (stringValid(clickedDivText)) {
-            if (positivePhrases == null) { 
-                addEntry("storePos", clickedDivText);
-            } else if (!positivePhrases.includes(clickedDivText)){
-                addEntry("storePos", clickedDivText);
-            } else {
-                console.log("Phrase already exists in positive list: " + clickedDivText);
-            }
-            processOnChange(e, true, clickedDivText);
-        } else {
-            console.log("Invalid string: " + clickedDivText);
-        }
-        updateLists();
+        if (stringValid(clickedDivText)) processOnChange(e, true, clickedDivText);
+        else console.log("Invalid string: " + clickedDivText);
     }
 
     function addEntry(storageName, entryValue) { 
@@ -310,6 +315,7 @@ $(document).ready(function(){
             existingEntries.push(entryValue);
             localStorage.setItem(storageName, JSON.stringify(existingEntries));
         }
+        updateLists();
     };
 
     function stringValid(str) {
@@ -320,16 +326,35 @@ $(document).ready(function(){
         }
     }
 
-    function crossClicked(cross) {
-        var negativeSuggestion;
-        if (cross == "crs0" && stringValid(sugs[0])) {
-            negativeSuggestion = sugs[0];
-        } else if (cross == "crs1" && stringValid(sugs[1])) {
-            negativeSuggestion = sugs[1];
-        } else if (cross == "crs2" && stringValid(sugs[2])) {
-            negativeSuggestion = sugs[2];
+    function tickClicked(tick) {
+        var positiveSuggestion;
+        var positiveSuggestionIndex;
+        for (var i = 0; i < maxSuggestions; i++) {
+            if (tick == "tck" + i && stringValid(sugs[i])) {
+                positiveSuggestion = sugs[i];
+                positiveSuggestionIndex = i;
+                break;
+            }
+        }
+        if (positivePhrases == null) {
+            addEntry("storePos", positiveSuggestion);
+        } else if (!positivePhrases.includes(positiveSuggestion)) {
+            addEntry("storePos", positiveSuggestion);
         } else {
-            console.log("given cross does not exist: " + cross + " or string is not valid: " + negativeSuggestion);
+            console.log("Phrase already exists in positive list: " + positiveSuggestion);
+        }
+    }
+
+    function crossClicked(cross) {
+        console.log("cross clicked: " + cross);
+        var negativeSuggestion;
+        var negativeSuggestionIndex;
+        for (var i = 0; i < maxSuggestions; i++) {
+            if (cross == "crs" + i && stringValid(sugs[i])) {
+                negativeSuggestion = sugs[i];
+                negativeSuggestionIndex = i;
+                break;
+            }
         }
         if (negativePhrases == null) {
             addEntry("storeNeg", negativeSuggestion);
@@ -338,7 +363,8 @@ $(document).ready(function(){
         } else {
             console.log("Phrase already exists in negative list: " + negativeSuggestion);
         }
-        updateLists();
+        sugs.splice(negativeSuggestionIndex, 1);
+        setResults(sugs, state);
     }
 
     function onTopKChange(topk) {
@@ -347,27 +373,37 @@ $(document).ready(function(){
             var newHorizontalFlexDiv = document.createElement("div");
             newHorizontalFlexDiv.className = "flex-horizontal";
 
-            var newSuggestionDiv = document.createElement("div");
-            newSuggestionDiv.className = "result";
-            newSuggestionDiv.id = "divResult" + i;
-            newSuggestionDiv.title = "Click to see this suggestion more";
+            var newTickImage = document.createElement("img");
+            newTickImage.src = "images/tick.png"; 
+            newTickImage.className = "tick";
+            newTickImage.id = "tick" + i;
+            newTickImage.title = "Click to see this suggestion more";
 
             var newCrossImage = document.createElement("img");
             newCrossImage.src = "images/cross.png"; 
             newCrossImage.className = "cross";
             newCrossImage.id = "cross" + i;
-            newCrossImage.title = "Click to remove this suggestion from results";
+            newCrossImage.title = "Click to not see this suggestion";
+
+            var newSuggestionDiv = document.createElement("div");
+            newSuggestionDiv.className = "result";
+            newSuggestionDiv.id = "divResult" + i;
+            newSuggestionDiv.title = "Click to add this suggestion to text box";
 
             document.getElementById("suggestions").appendChild(newHorizontalFlexDiv);
-            newHorizontalFlexDiv.appendChild(newSuggestionDiv);
+            newHorizontalFlexDiv.appendChild(newTickImage);
             newHorizontalFlexDiv.appendChild(newCrossImage);
+            newHorizontalFlexDiv.appendChild(newSuggestionDiv);
         }
+        defineOnClickListeners();
     }
 
     // writes given string to result div
     function setResult(s) {
-        $("#divResult0").css({'color':'grey'}); 
+        $("#divResult0").css({"color" : "grey"}); 
         $("#divResult0").text(s); 
+        $("#divResult0").prop("title", ""); 
+        $("#divResult0").css({"margin-left" : "-10%"}); 
         for (var i = 1; i < maxSuggestions; i++) {
             $("#divResult" + i).text(""); 
         }
@@ -378,13 +414,11 @@ $(document).ready(function(){
     function setResults(sgs, st) {
         resetResults();
         state = st;
-        if (st == "pt") {
-            $("#divResult0").css({'color':'black'}); 
-        } else {
-            $("#divResult0").css({'color':'grey'}); 
-        }
+        $("#divResult0").css({"margin-left" : "0"}); 
+        if (sgs[0]) lastTopSuggestion = sgs[0];
+        if (st == "pt") $("#divResult0").css({'color':'black'}); 
+        else $("#divResult0").css({'color':'grey'}); 
         for (var i = 0; i < maxSuggestions; i++) $("#divResult" + i).text(sgs[i]);
-
         renderCrossImages();
     }
 
@@ -401,11 +435,23 @@ $(document).ready(function(){
     }
 
     function renderCrossImages() {
-        if ($("#divResult0").text() == "" || $("#divResult0").text() == "no suggestion") hideImage("cross0");
-        else showImage("cross0");
+        if ($("#divResult0").text() == "" || $("#divResult0").text() == "no suggestion") {
+            hideImage("cross0");
+            hideImage("tick0");
+        } 
+        else {
+            showImage("cross0");
+            showImage("tick0");
+        }
         for (var i = 1; i < maxSuggestions; i++) {
-            if ($("#divResult" + i).text() == "") hideImage("cross" + i);
-            else showImage("cross" + i);
+            if ($("#divResult" + i).text() == "") {
+                hideImage("cross" + i);
+                hideImage("tick" + i);
+            }
+            else {
+                showImage("cross" + i);
+                showImage("tick" + i);
+            }
         }
     }
 });

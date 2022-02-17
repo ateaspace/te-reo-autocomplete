@@ -7,6 +7,8 @@ html, body {
 hr {
     margin-top: 0.2em !important;
     margin-bottom: 0.2em !important;
+    width: 85%;
+    margin-left: 0;
 }
 
 #divMain {
@@ -15,7 +17,6 @@ hr {
 }
 
 .flex-vertical {
-    align-items: right;
     display: flex;
     flex-wrap: wrap;
     flex-direction: column;
@@ -27,7 +28,7 @@ hr {
 
 .flex-horizontal {
     display: flex;
-    justify-content: center;
+    justify-content: left;
     flex-wrap: wrap;
     flex-direction: row;
     width: 100%;
@@ -52,10 +53,6 @@ hr {
     border: 3px solid rgb(170, 31, 37);
 }
 
-#resultContainer {
-    width: 34vw;
-}
-
 .result {
     font-size: 20px;
     font-family: 'Fira Sans', sans-serif;
@@ -65,7 +62,7 @@ hr {
 }
 
 .result:hover {
-    color:rgb(17, 128, 17) !important; /* potentially bad practice? */
+    color: black !important; /* potentially bad practice? */
 }
 
 .result:active {
@@ -74,7 +71,7 @@ hr {
 
 .cross {
     margin-top: 0.75%;
-    margin-left: 1%;
+    margin-right: 1%;
     width: 5%;
     height: auto;
     cursor: pointer;
@@ -89,6 +86,27 @@ hr {
 }
 
 .cross:active {
+    opacity: 1;
+    filter: brightness(0.8);
+}
+
+.tick {
+    margin-top: 0.75%;
+    margin-right: 1%;
+    width: 5%;
+    height: auto;
+    cursor: pointer;
+    visibility: hidden;
+    opacity: 0.6;
+    transition: 0.05s ease;
+    align-self: start;
+}
+
+.tick:hover {
+    opacity: 1;
+}
+
+.tick:active {
     opacity: 1;
     filter: brightness(0.8);
 }
@@ -124,56 +142,45 @@ div.selectpopup.popupitems {
     margin: 1%;
 }
 
-.popupcross {
-    width: 2em;
-    height: 2em;
-    cursor: pointer;
-    transition: 0.05s ease;
-    filter: brightness(1.2);
-}
-
-.popupcross:hover {
-    filter: brightness(0.8);
-}
-
-.popupcross:active {
-    margin-top: 1.2%;
-    opacity: 1;
-}
-
 #listbutton {
-    margin-top: 1vh;    
-    margin-left: 1vh;    
-    width: 3em;
-    height: 3em;
+    margin-top: 1vh;
+    margin-left: auto;    
+    margin-bottom: calc(-3vw - 1vh);
+    width: 3vw;
+    height: 3vw;
     padding: 0;
-    border: 1px solid grey;
+    border: none;
     border-radius: 0;
+    background: none;
+}
+
+#listbutton:focus {
+    outline: none !important;
+    box-shadow: none !important;
 }
 
 #dropdownTopK {
-    position: absolute;
-    top: 1em;
-    left: 1em;
-    /* margin-top: 1vh;
-    margin-left: auto;  */
-    width: 3em;
-    height: 3em;
-    padding: 0;
+    /* width: 3em;
+    height: 3em; */
     border: 1px solid grey;
     border-radius: 0;
 }
 
 .listContainer {
     font-size: 18px;
-    background-color: rgba(255, 255, 255, 0.4);
+    background-color: none;
     border: none;
-    width: 107%;
+    width: 100%;
     transition: 0.5s ease;
     max-height: 0vh;
     margin-top: 1vh;  
-    margin-left: -3.5%;  
     overflow-y: scroll;
+}
+
+.listContainer br {
+    display: block; 
+    content: ""; 
+    margin-top: 0.75%; 
 }
 
 .listColumn {
@@ -215,5 +222,37 @@ div.selectpopup.popupitems {
 #cog {
     width: 100%;
     height: auto;
-    transition: transform 0.5s ease;
+    transition: transform 0.4s ease, background-color 0.1s ease;
+    border-radius: 50%;
+}
+
+#cog:hover {
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+#suggestions {
+    width: 37vw; /* 40 (textarea) - 3 (listbutton)*/
+    padding: 0;
+    margin: 0;
+}
+
+#options {
+    padding: 1%;
+}
+
+#popuptick {
+    width: 2em;
+    height: 2em;
+    cursor: pointer;
+    transition: 0.05s ease;
+    filter: brightness(1.2);
+}
+
+#popuptick:hover {
+    filter: brightness(0.8);
+}
+
+#popuptick:active {
+    margin-top: 1.2%;
+    opacity: 1;
 }
