@@ -139,6 +139,7 @@ $(document).ready(function(){
                     setResult("no suggestion");
                 }
             } else if (state == "ft" || state == "pt") { // if suggestions exist
+                console.log("positivePhrases.length: " + positivePhrases.length);
                 if (positivePhrases.length > 0) { // handle phrases in positive list
                     var changeMade = false;
                     for (var i = 0; i < sugs.length; i++) {
@@ -379,7 +380,13 @@ $(document).ready(function(){
             newHorizontalFlexDiv.appendChild(newSuggestionDiv);
         }
         defineOnClickListeners(); // create onClick listeners for new suggestion items
-        // generate current sentence for regeneration of suggestions
+        // regenerate suggestions
+        suggCount = 0;
+        sugs = [];
+        regenerateSuggestions();
+    }
+
+    function regenerateSuggestions() { // uses current input to regenerate suggestions
         var cursorLoc = inputElement.selectionStart; // current cursor location
         var input = $("#inputString").val(); // entire input text
         var beforeCursor = input.substring(0, cursorLoc); // all text before cursor location
