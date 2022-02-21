@@ -17,8 +17,15 @@ $(document).ready(function(){
     var inputElement = document.getElementById("inputString");
     inputElement.focus();
 
+    initLocalStorage();
     updateLists();
     onTopKChange(maxSuggestions);
+
+    function initLocalStorage() {
+        if (!positivePhrases) localStorage.setItem("storePos", JSON.stringify(""));
+        if (!negativePhrases) localStorage.setItem("storeNeg", JSON.stringify(""));
+        if (!customPhrases) localStorage.setItem("storeCus", JSON.stringify(""));
+    }
 
     $("#inputString").on('keydown', function(e) {
         if (e.which == KEY_TAB) { 
@@ -236,15 +243,17 @@ $(document).ready(function(){
         positiveListDiv.innerHTML = "";
         negativeListDiv.innerHTML = "";
         customListDiv.innerHTML = "";
-        // iterate through lists, add divs dynamically to represent list item
-        for (var idx = 0; idx < positivePhrases.length; idx++) {
-            positiveListDiv.innerHTML += "<div class=\"listPhrase\" id=\"plist" + idx + "\" title=\"Click to remove suggestion from list\">" + positivePhrases[idx] + "</div>";
-        }
-        for (var idx = 0; idx < negativePhrases.length; idx++) {
-            negativeListDiv.innerHTML += "<div class=\"listPhrase\" id=\"nlist" + idx + "\" title=\"Click to remove suggestion from list\">" + negativePhrases[idx] + "</div>";
-        }
-        for (var idx = 0; idx < customPhrases.length; idx++) {
-            customListDiv.innerHTML += "<div class=\"listPhrase\" id=\"clist" + idx + "\" title=\"Click to remove suggestion from list\">" + customPhrases[idx] + "</div>";
+        if (positivePhrases && negativePhrases && customPhrases) {
+            // iterate through lists, add divs dynamically to represent list item
+            for (var idx = 0; idx < positivePhrases.length; idx++) {
+                positiveListDiv.innerHTML += "<div class=\"listPhrase\" id=\"plist" + idx + "\" title=\"Click to remove suggestion from list\">" + positivePhrases[idx] + "</div>";
+            }
+            for (var idx = 0; idx < negativePhrases.length; idx++) {
+                negativeListDiv.innerHTML += "<div class=\"listPhrase\" id=\"nlist" + idx + "\" title=\"Click to remove suggestion from list\">" + negativePhrases[idx] + "</div>";
+            }
+            for (var idx = 0; idx < customPhrases.length; idx++) {
+                customListDiv.innerHTML += "<div class=\"listPhrase\" id=\"clist" + idx + "\" title=\"Click to remove suggestion from list\">" + customPhrases[idx] + "</div>";
+            }
         }
     }
 
