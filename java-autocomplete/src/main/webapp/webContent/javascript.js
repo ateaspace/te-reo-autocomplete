@@ -17,7 +17,7 @@ $(document).ready(function(){
     var inputElement = document.getElementById("inputString");
     inputElement.focus();
 
-    initLocalStorage();
+    // initLocalStorage();
     updateLists();
     onTopKChange(maxSuggestions);
 
@@ -174,7 +174,7 @@ $(document).ready(function(){
             } else {
                 console.log("given state does not exist: " + state);
             }
-            if (customPhrases.length > 0) { // handle phrases in custom list
+            if (customPhrases && customPhrases.length > 0) { // handle phrases in custom list
                 for (var j = 0; j < customPhrases.length; j++) {
                     if (sanitize(customPhrases[j]).startsWith(sanitize(currentSentence))) {
                         if ((sanitize(customPhrases[j]).length / 2) < sanitize(currentSentence).length) { // if input matches more than half of custom phrase
@@ -231,6 +231,7 @@ $(document).ready(function(){
     $(document).on('click', '.listPhrase', function(e) { listItemClicked(e.target.id); }); // list item click listener
 
     function updateLists() { // updates positive, negative and custom phrase lists from localStorage
+        console.log("updating lists...");
         // get items from localStorage
         positivePhrases = JSON.parse(localStorage.getItem("storePos"));
         negativePhrases = JSON.parse(localStorage.getItem("storeNeg"));
@@ -243,14 +244,18 @@ $(document).ready(function(){
         positiveListDiv.innerHTML = "";
         negativeListDiv.innerHTML = "";
         customListDiv.innerHTML = "";
-        if (positivePhrases && negativePhrases && customPhrases) {
-            // iterate through lists, add divs dynamically to represent list item
+        // iterate through lists, add divs dynamically to represent list item
+        if (positivePhrases) {
             for (var idx = 0; idx < positivePhrases.length; idx++) {
                 positiveListDiv.innerHTML += "<div class=\"listPhrase\" id=\"plist" + idx + "\" title=\"Click to remove suggestion from list\">" + positivePhrases[idx] + "</div>";
             }
+        }
+        if (negativePhrases) {
             for (var idx = 0; idx < negativePhrases.length; idx++) {
                 negativeListDiv.innerHTML += "<div class=\"listPhrase\" id=\"nlist" + idx + "\" title=\"Click to remove suggestion from list\">" + negativePhrases[idx] + "</div>";
             }
+        }
+        if (customPhrases) {
             for (var idx = 0; idx < customPhrases.length; idx++) {
                 customListDiv.innerHTML += "<div class=\"listPhrase\" id=\"clist" + idx + "\" title=\"Click to remove suggestion from list\">" + customPhrases[idx] + "</div>";
             }
@@ -423,7 +428,8 @@ $(document).ready(function(){
         else $("#divResult0").css({'color':'grey'}); 
         for (var i = 0; i < maxSuggestions; i++) {
             if (sgs[i]) {
-                var lastSevenWords = sgs[i].split(" ").slice(-7).join(" "); // limits result output to seven words - this could be improved by lining up the first word with other suggestions'
+                // var lastSevenWords = sgs[i].split(" ").slice(-7).join(" "); // limits result output to seven words - this could be improved by lining up the first word with other suggestions'
+                var lastSevenWords = sgs[i];
                 $("#divResult" + i).text(lastSevenWords);
             }
         }
