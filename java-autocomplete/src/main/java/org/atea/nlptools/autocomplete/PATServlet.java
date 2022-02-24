@@ -312,7 +312,7 @@ public class PATServlet extends HttpServlet {
                 }
                 bigramFinal = normalized_Bigrams.entrySet(); // convert to set
             } else {
-                System.out.println("Bigram not populated.");
+                // System.out.println("Bigram not populated.");
             }
 
             for (TermAndFrequency result : results_MPTR) {
