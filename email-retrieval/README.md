@@ -18,8 +18,5 @@ Copy the returned code and paste it back into the terminal. The service should r
 
 Note that the API may return an error: "Too many concurrent requests for user". Unfortunately this is unavoidable. The program will still successfully write an output file, it simply will be missing the oldest emails.
 
-## Options
-The constant `num_results` determines the maximum number of emails to attach to the JavaScript object. Note that due to the nature of conversations in Gmail, the number of emails actually returned may be lower than the value of `num_results`.
-
 ## License
 [GPL v3.0](https://www.gnu.org/licenses/gpl-3.0.en.html)
