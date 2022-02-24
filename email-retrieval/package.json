@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "batchelor": "^2.0.2",
+    "googleapis": "^92.0.0"
+  }
+}
