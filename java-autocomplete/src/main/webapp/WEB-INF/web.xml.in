@@ -75,7 +75,7 @@
       <!-- parameters -->
       <init-param>
         <param-name>dataType</param-name>
-        <param-value>rmt</param-value>
+        <param-value>txt</param-value>
       </init-param>
       <init-param>
         <param-name>corpusHome</param-name>
@@ -83,8 +83,9 @@
       </init-param>
       <init-param>
         <param-name>corpus</param-name>
-        <!-- <param-value>@corpushome@/corpus-macronizer.txt</param-value> -->
-        <param-value>@corpushome@/rmt_corpus_cleaned.csv</param-value>
+        <param-value>@corpushome@/corpus-macronizer.txt</param-value>
+        <!-- <param-value>@corpushome@/rmt_corpus_cleaned.csv</param-value> -->
+        <!-- <param-value>@corpushome@/output.json</param-value> -->
       </init-param>
     </servlet>
 
